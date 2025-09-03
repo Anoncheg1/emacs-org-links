@@ -1,4 +1,4 @@
-;;; org-links.el --- [[PATH::NUM::LINE]] links that search for line and then for number -*- lexical-binding: t -*-
+;;; org-links.el --- Links [[file:PATH::NUM::LINE]] that search for line and then for number -*- lexical-binding: t -*-
 
 ;; Copyright (c) 2025 github.com/Anoncheg1,codeberg.org/Anoncheg
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
@@ -125,93 +125,94 @@ If size of file larger than threshold we will process file line by line
 instead creating of copy.")
 
 (defsubst org-links-string-full-match (regexp string)
+  "Return t if REGEXP fully match STRING."
   (and (string-match regexp string)
        (zerop (match-beginning 0))
        (= (match-end 0) (length string))))
 
 ;;; - Store
 (defun org-links--begins-with-single-asterisk-p (s)
-  "For checking that link was not created for Org header.
+  "For checking that S link was not created for Org header.
 That have format *header-text."
   (and (string-prefix-p "*" s)
        (> (length s) 1)
        (not (eq (aref s 1) ?*))))
 
-(defun org-links--org-store-link (func-call &rest args)
-  "From [[PATH::LINE]] make [[PATH::NUM::LINE]].
-Abbreviate path used."
-  (let ((org-stored-links) ; replace with local one
-        (link
-         (cond
-          ;; - Images mode 1
-          ((derived-mode-p 'image-dired-thumbnail-mode)
-           ;; create link by self
-           (concat "file:" (abbreviate-file-name (image-dired-original-file-name))))
-          ;; - Images mode 2
-          ((derived-mode-p 'image-dired-image-mode)
+;; (defun org-links--org-store-link (func-call &rest args)
+;;   "From [[PATH::LINE]] make [[PATH::NUM::LINE]].
+;; Abbreviate path used."
+;;   (let ((org-stored-links) ; replace with local one
+;;         (link
+;;          (cond
+;;           ;; - Images mode 1
+;;           ((derived-mode-p 'image-dired-thumbnail-mode)
+;;            ;; create link by self
+;;            (concat "file:" (abbreviate-file-name (image-dired-original-file-name))))
+;;           ;; - Images mode 2
+;;           ((derived-mode-p 'image-dired-image-mode)
 
-           (buffer-file-name (buffer-base-buffer)))
-          ;; - in Org - <<target>>
-          ;; ((and (buffer-file-name (buffer-base-buffer))
-          ;;       (derived-mode-p 'org-mode)
-          ;;       (org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]" 1))
-          ;;  (match-string 1)
-          ;;  )
+;;            (buffer-file-name (buffer-base-buffer)))
+;;           ;; - in Org - <<target>>
+;;           ;; ((and (buffer-file-name (buffer-base-buffer))
+;;           ;;       (derived-mode-p 'org-mode)
+;;           ;;       (org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]" 1))
+;;           ;;  (match-string 1)
+;;           ;;  )
 
-          ;; else
-          ;; - Call `org-store-link'
-          (t
-           (apply func-call args)
-           ;; - link-stored returned by `org-store-link'
-           (let ((link-stored (substring-no-properties (car (car org-stored-links))))
-                 (all-prefixes (org-link-types)))
-             (print (list "link-stored" org-stored-links))
-             ;; - Split link-stored
-             (let ((desc (apply #'mapconcat #'identity (cdr (string-split link-stored "::")) '("::")))
-                   (before-desc (car (string-split link-stored "::")))
-                   ;; detect type, like in `org-insert-link'
-                   (type
-                    (cond
-                     ((and all-prefixes
-                           (string-match (rx-to-string `(: string-start (submatch (or ,@all-prefixes)) ":")) link-stored))
-                      (match-string 1 link-stored))
-                     ((file-name-absolute-p link-stored) "file")
-                     ((string-match "\\`\\.\\.?/" link-stored) "file"))))
-               ;; (print (list "type" type))
-               (print (list "desc" desc))
-               ;; (link-path (string-split link "::")
-               ;; (let* ((link-element (with-temp-buffer
-               ;;                (let ((org-inhibit-startup nil))
-               ;;                  (insert link)
-               ;;                  (org-mode)
-               ;;                  (goto-char (point-min))
-               ;;                  (org-element-link-parser))))
-               ;;        (type (org-element-property :type link-element))
-               ;;        (path (org-element-property :path link-element))
-               ;;        (follow (org-link-get-parameter type :follow))
-               ;;        (option (org-element-property :search-option link-element))) ;; after ::
-               ;;   (print (list type path option follow))
-               ;;   (print link-element))
-               (if (and (string-equal type "file")
-                        (or (derived-mode-p 'prog-mode)
-                            (derived-mode-p 'text-mode)
-                            (derived-mode-p 'fundamental-mode))
-                        (not (org-links--begins-with-single-asterisk-p desc))) ; not header
-                   ;; if pointer at <<target>>
-                   (if (and (not (string-empty-p desc)) (org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]" 1))
-                       (concat before-desc "::" (number-to-string (line-number-at-pos)) "::<<" (match-string 1) ">>")
-                     ;; else - file links
-                     (let* ((desc (if (not (string-empty-p desc)) (concat "::" desc)))
-                            (link (concat before-desc "::" (number-to-string (line-number-at-pos))
-                                          (if org-link-context-for-files desc) )))
-                       link))
-                 ;; else - original
-                 link-stored)))))))
-    ;; - Final link preparation
-    (let ((link2 (concat "[[" link "]]")))
-      (kill-new link2)
-      (message (concat link2 "\t- copied to clipboard"))
-      link2)))
+;;           ;; else
+;;           ;; - Call `org-store-link'
+;;           (t
+;;            (apply func-call args)
+;;            ;; - link-stored returned by `org-store-link'
+;;            (let ((link-stored (substring-no-properties (car (car org-stored-links))))
+;;                  (all-prefixes (org-link-types)))
+;;              (print (list "link-stored" org-stored-links))
+;;              ;; - Split link-stored
+;;              (let ((desc (apply #'mapconcat #'identity (cdr (string-split link-stored "::")) '("::")))
+;;                    (before-desc (car (string-split link-stored "::")))
+;;                    ;; detect type, like in `org-insert-link'
+;;                    (type
+;;                     (cond
+;;                      ((and all-prefixes
+;;                            (string-match (rx-to-string `(: string-start (submatch (or ,@all-prefixes)) ":")) link-stored))
+;;                       (match-string 1 link-stored))
+;;                      ((file-name-absolute-p link-stored) "file")
+;;                      ((string-match "\\`\\.\\.?/" link-stored) "file"))))
+;;                ;; (print (list "type" type))
+;;                (print (list "desc" desc))
+;;                ;; (link-path (string-split link "::")
+;;                ;; (let* ((link-element (with-temp-buffer
+;;                ;;                (let ((org-inhibit-startup nil))
+;;                ;;                  (insert link)
+;;                ;;                  (org-mode)
+;;                ;;                  (goto-char (point-min))
+;;                ;;                  (org-element-link-parser))))
+;;                ;;        (type (org-element-property :type link-element))
+;;                ;;        (path (org-element-property :path link-element))
+;;                ;;        (follow (org-link-get-parameter type :follow))
+;;                ;;        (option (org-element-property :search-option link-element))) ;; after ::
+;;                ;;   (print (list type path option follow))
+;;                ;;   (print link-element))
+;;                (if (and (string-equal type "file")
+;;                         (or (derived-mode-p 'prog-mode)
+;;                             (derived-mode-p 'text-mode)
+;;                             (derived-mode-p 'fundamental-mode))
+;;                         (not (org-links--begins-with-single-asterisk-p desc))) ; not header
+;;                    ;; if pointer at <<target>>
+;;                    (if (and (not (string-empty-p desc)) (org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]" 1))
+;;                        (concat before-desc "::" (number-to-string (line-number-at-pos)) "::<<" (match-string 1) ">>")
+;;                      ;; else - file links
+;;                      (let* ((desc (if (not (string-empty-p desc)) (concat "::" desc)))
+;;                             (link (concat before-desc "::" (number-to-string (line-number-at-pos))
+;;                                           (if org-link-context-for-files desc) )))
+;;                        link))
+;;                  ;; else - original
+;;                  link-stored)))))))
+;;     ;; - Final link preparation
+;;     (let ((link2 (concat "[[" link "]]")))
+;;       (kill-new link2)
+;;       (message (concat link2 "\t- copied to clipboard"))
+;;       link2)))
 
 ;;; - Open link
 (defun org-links--line-number-at-string-pos (string pos)
@@ -220,7 +221,8 @@ Abbreviate path used."
 
 
 (defun org-links-find-first-two-exact-lines-in-buffer-optimized (search-string-regex &optional get-positions n)
-  "Find first two lines exactly matching SEARCH-STRING in current buffer.
+  "Find first N or two exactly matching lines to SEARCH-STRING-REGEX.
+Search in current buffer.
 Returns list of line numbers or empty list.
 If GET-POSITIONS is  non-nil, returns list of buffer  positions for each
 match otherwisde line numbers."
@@ -263,7 +265,7 @@ match otherwisde line numbers."
             (nreverse results2))))))
 
 (defun org-links--find-line (link-org-string)
-  "Return empty list or with numbers."
+  "Return empty list or with numbers that match LINK-ORG-STRING."
   (let ((link (concat "^" (org-links-org--unnormalize-string (regexp-quote link-org-string)) "$")))
     (org-links-find-first-two-exact-lines-in-buffer-optimized link)))
 
@@ -302,7 +304,8 @@ match otherwisde line numbers."
 ;;     (error "<<asd>>2"))
 
 (defun org-links--org-link-open-as-file (orig-fun &rest args)
-  "For file:/path/file::NUM::DESC.
+  "Extend `org-link-open-as-file' that is ORIG-FUN with ARGS.
+For file:/path/file::NUM::DESC.
 Advice for `org-link-open-as-file'.
 We look for TEXT in file and if found and only one go there.
 Otherwise, go to NUM.
@@ -518,10 +521,11 @@ Return True, if we identify and follow a link of el."
 ;;       result)))
 
 (defun org-links-org-link--normalize-string (string &optional context)
-  "Instead of much of removal we only compact spaces and remove leading.
+  "Modified version of `org-link--normalize-string'.
+Instead of much of removal we only compact spaces and remove leading.
 Instead of removing [1/3], [50%], leading ( and trailing ), spaces at
-the end of line, we just compress spaces in line and remove leading
-spaces."
+the end of STRING, we just compress spaces in line and remove leading
+spaces from STRING.  CONTEXT ignored."
   (let ((string
 	 ;; (org-trim
           (string-trim
@@ -543,7 +547,8 @@ spaces."
     string))
 
 (defun org-links-org--unnormalize-string (string)
-  "Convert string to regex.
+  "Convert STRING to regex.
+Reverse of `org-links-org-link--normalize-string.
 Add spaces at begin of line and replace spaces with any number of spaces
 or tabs in the middle.
 To create proper regex, string should be first be processed with
@@ -554,7 +559,7 @@ To create proper regex, string should be first be processed with
 (if (not (string-match (let ((string "    ;;     	    (setq string (org-trim (substring string 1 -1))))"))
                          (org-links-org-link--normalize-string string))
                        ";; (setq string (org-trim (substring string 1 -1))))"))
-    (error "assert failed"))
+    (error "Assert failed"))
 
 (let ((string "    ;;     	    (setq string (org-trim (substring string 1 -1))))"))
   (if (not (org-links-string-full-match
@@ -562,12 +567,13 @@ To create proper regex, string should be first be processed with
                  (regexp-quote
                   (org-links-org-link--normalize-string string)))
                 string))
-    (error "assert failed")))
+    (error "Assert failed")))
 
 ;;; - simple store link
 
 (defun org-links-store-extended (arg)
-  "Store link to kill-ring clipboard.
+  "Store link to `kill-ring' clipboard.
+ARG is universal argument.
 For usage with original Org `org-open-at-point-global' function."
   (interactive "P\n")
   (let ((org-link-context-for-files nil)
@@ -613,8 +619,9 @@ For usage with original Org `org-open-at-point-global' function."
 ;;; - Fallback simple function without requirement of org-links this package
 (defun org-links-store-link-fallback (arg)
   "Copy Org-mode link to kill ring and clipboard from any mode.
-Without a prefix argument, copies a link PATH::NUM (current line number).
-With a universal argument (C-u), copies a link in the form PATH::LINE.
+Without a  prefix argument  ARG, copies a  link PATH::NUM  (current line
+number).
+With a universal argument C - u, copies a link in the form PATH::LINE.
 Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
   (interactive "P")
   (let ((link

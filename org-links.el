@@ -1,8 +1,6 @@
-;;; org-links.el --- Links [[file:PATH::NUM::LINE]] that search for line and then for number -*- lexical-binding: t -*-
+;;; org-links.el --- [[file:PATH::NUM::LINE]] for search for line and then for number -*- lexical-binding: t -*-
 
-;; Copyright (c) 2025 github.com/Anoncheg1,codeberg.org/Anoncheg
-;; SPDX-License-Identifier: AGPL-3.0-or-later
-;; Author: github.com/Anoncheg1,codeberg.org/Anoncheg
+;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
 ;; Keywords: org, links, link, jump, jumping
 ;; URL: https://github.com/Anoncheg1/emacs-org-links
 ;; Version: 0.1
@@ -10,6 +8,11 @@
 ;; Package-Requires: ((emacs "27.1") (compat "30.1"))
 ;; > (Emacs 26+) for negative regex
 ;; "27.1" for ol.el
+;; SPDX-License-Identifier: AGPL-3.0-or-later
+;; Copyright (c) 2025 github.com/Anoncheg1,codeberg.org/Anoncheg
+
+;;; Keywords:
+
 
 ;;; License
 

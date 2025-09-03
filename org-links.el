@@ -342,8 +342,7 @@ Return True, if we identify and follow a link of el."
           (if (eq (length line-position) 1) ;; found exactly one
               (forward-line (1- (car line-position)))
             ;; else - not found or many of them, we use  num to jump
-            (forward-line (1- (string-to-number num)))))
-        )
+            (forward-line (1- (string-to-number num))))))
     ;; else
     (apply orig-fun args)))
 
@@ -622,9 +621,7 @@ For usage with original Org `org-open-at-point-global' function."
                              "]]")
                    ;; else
                    (setq org-link-context-for-files t)
-                   (org-store-link nil)
-                   ))
-      ))
+                   (org-store-link nil)))))
     (kill-new link)
     (message (concat link "\t- copied to clipboard"))))
 

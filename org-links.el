@@ -7,8 +7,9 @@
 ;; URL: https://github.com/Anoncheg1/emacs-org-links
 ;; Version: 0.1
 ;; Created: 30 Aug 2025
-;; Package-Requires: ((emacs "24.1") (compat "30.1"))
+;; Package-Requires: ((emacs "27.1") (compat "30.1"))
 ;; > (Emacs 26+) for negative regex
+;; "27.1" for ol.el
 
 ;;; License
 

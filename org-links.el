@@ -596,10 +596,10 @@ For usage with original Org `org-open-at-point-global' function."
         link)
     (cond
      ;; - Images mode 1
-     ((derived-mode-p 'image-dired-thumbnail-mode)
+     ((derived-mode-p (intern "image-dired-thumbnail-mode"))
       (setq link (concat "file:" (abbreviate-file-name (image-dired-original-file-name)))))
      ;; - Images mode 2
-     ((derived-mode-p 'image-dired-image-mode)
+     ((derived-mode-p (intern "image-dired-image-mode"))
       (setq link (buffer-file-name (buffer-base-buffer))))
 
      ;; - Programming mode store without fuzzy content and add line number."

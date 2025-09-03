@@ -91,3 +91,8 @@ Simple storing links to kill ring:
 Provided function for copying link to kill ring with additional format for programming mode.
 
 For opening links there is advice that extend standard org-open-at-point-global and org-open-at-point function used to follow link to support new additional format of link.
+
+### Donate, sponsor author
+You can give me crypto money directly with crypto currencies:
+- BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
+- USDT (Tether) address: TVoXfYMkVYLnQZV3mGZ6GvmumuBfGsZzsN

@@ -115,6 +115,11 @@
 ;;
 ;; `org-store-link' and `org-open-at-point' works with [[file:~/a.org::nname]] and [[nname]] - look for <<target>> or #+NAME:
 
+;; DONATE MONEY, SPONSOR AUTHOR
+;; You can give me crypto money directly with crypto currencies:
+;; - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
+;; - USDT (Tether) address: TVoXfYMkVYLnQZV3mGZ6GvmumuBfGsZzsN
+
 ;;; Code:
 ;;; - code
 (require 'ol)

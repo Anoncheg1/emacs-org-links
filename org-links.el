@@ -229,6 +229,7 @@ That have format *header-text."
   "Find first N or two exactly matching lines to SEARCH-STRING-REGEX.
 Search in current buffer.
 Returns list of line numbers or empty list.
+Count lines from 1 like `line-number-at-pos' function does.
 If GET-POSITIONS is  non-nil, returns list of buffer  positions for each
 match otherwisde line numbers."
   (let* ((threshold org-links-threshold-search-link-optimization-max-file)
@@ -333,14 +334,14 @@ Return True, if we identify and follow a link of el."
         (apply orig-fun (list (substring path 0 (match-beginning 0)) in-emacs))
         (let ((line-position (org-links--find-line line)))
           ;; (print (list "line-position" line-position (eq (length line-position) 1)))
+          (goto-char (point-min)) ; move to begining of buffer for call of `forward-line' after
           (if (eq (length line-position) 1) ;; found exactly one
-              (goto-line (car line-position))
+              (forward-line (1- (car line-position)))
             ;; else - not found or many of them, we use  num to jump
-            (goto-line (string-to-number num))))
+            (forward-line (1- (string-to-number num)))))
         )
     ;; else
-    (apply orig-fun args)
-    ))
+    (apply orig-fun args)))
 
     ;; ;; (print desc)
     ;; ;; (print el)
@@ -531,6 +532,7 @@ Instead of much of removal we only compact spaces and remove leading.
 Instead of removing [1/3], [50%], leading ( and trailing ), spaces at
 the end of STRING, we just compress spaces in line and remove leading
 spaces from STRING.  CONTEXT ignored."
+  (setq context context) ;; noqa for Warning: Unused lexical argument ‘context’
   (let ((string
 	 ;; (org-trim
           (string-trim
@@ -579,6 +581,7 @@ To create proper regex, string should be first be processed with
 (defun org-links-store-extended (arg)
   "Store link to `kill-ring' clipboard.
 ARG is universal argument.
+Count lines from 1 like `line-number-at-pos' function does.
 For usage with original Org `org-open-at-point-global' function."
   (interactive "P\n")
   (let ((org-link-context-for-files nil)
@@ -626,6 +629,7 @@ For usage with original Org `org-open-at-point-global' function."
   "Copy Org-mode link to kill ring and clipboard from any mode.
 Without a  prefix argument  ARG, copies a  link PATH::NUM  (current line
 number).
+Count lines from 1 like `line-number-at-pos' function does.
 With a universal argument C - u, copies a link in the form PATH::LINE.
 Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
   (interactive "P")

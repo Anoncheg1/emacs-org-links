@@ -1,7 +1,7 @@
-;;; org-links.el --- Link [[PATH::NUM::LINE]] - search line and fallback to number -*- lexical-binding: t -*-
+;;; org-links.el --- [[PATH::NUM::LINE]] - search line and fallback to number -*- lexical-binding: t -*-
 
 ;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
-;; Keywords: org, links, link, jump, jumping
+;; Keywords: org, text, hypermedia, url
 ;; URL: https://github.com/Anoncheg1/emacs-org-links
 ;; Version: 0.1
 ;; Created: 30 Aug 2025
@@ -10,8 +10,6 @@
 ;; "27.1" for ol.el
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; Copyright (c) 2025 github.com/Anoncheg1,codeberg.org/Anoncheg
-
-;;; Keywords:
 
 
 ;;; License
@@ -597,7 +595,7 @@ For usage with original Org `org-open-at-point-global' function."
     (cond
      ;; - Images mode 1
      ((derived-mode-p (intern "image-dired-thumbnail-mode"))
-      (setq link (concat "file:" (abbreviate-file-name (image-dired-original-file-name)))))
+      (setq link (concat "file:" (abbreviate-file-name (funcall (intern "image-dired-original-file-name"))))))
      ;; - Images mode 2
      ((derived-mode-p (intern "image-dired-image-mode"))
       (setq link (buffer-file-name (buffer-base-buffer))))

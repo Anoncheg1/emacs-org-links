@@ -1,4 +1,4 @@
-;;; org-links.el --- [[PATH::NUM::LINE]] - search line and fallback to number -*- lexical-binding: t -*-
+;;; org-links.el --- Search line and fallback to number [[PATH::NUM::LINE]] -*- lexical-binding: t -*-
 
 ;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
 ;; Keywords: org, text, hypermedia, url
@@ -639,7 +639,7 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
   (interactive "P")
   (let ((link
          (if (derived-mode-p 'image-dired-thumbnail-mode)
-             (concat "file:" (abbreviate-file-name (image-dired-original-file-name)))
+             (concat "file:" (abbreviate-file-name (funcall (intern "image-dired-original-file-name"))))
            ;; - else
            (if (derived-mode-p 'image-dired-image-mode)
                 (buffer-file-name (buffer-base-buffer))

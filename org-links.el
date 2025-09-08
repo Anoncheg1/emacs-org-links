@@ -122,6 +122,10 @@
 ;; `org-store-link'     and     `org-open-at-point'     works     with
 ;;   [[file:~/a.org::nname]]  and [[nname]]  -  look  for <<target>>  or #+NAME:
 
+;;; TODO:
+;; - add advice for  org-element-link-parser and add own  link type to
+;;   simplify `org-link-open'
+
 ;; DONATE MONEY, SPONSOR AUTHOR:
 ;; You can sponsor me directly with crypto currencies:
 ;; - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
@@ -142,90 +146,95 @@ instead creating of copy.")
        (zerop (match-beginning 0))
        (= (match-end 0) (length string))))
 
-;;; - Store
-(defun org-links--begins-with-single-asterisk-p (s)
-  "For checking that S link was not created for Org header.
-That have format *header-text."
-  (and (string-prefix-p "*" s)
-       (> (length s) 1)
-       (not (eq (aref s 1) ?*))))
+(defun org-links-create-link (string &optional description)
+  "Apply `org-link-file-path-type' variable.
+We wrap `org-insert-link' function to create final link."
+    (with-temp-buffer
+        (org-insert-link nil string nil)
+        (buffer-substring-no-properties (point-min) (point-max))))
 
-;; (defun org-links--org-store-link (func-call &rest args)
-;;   "From [[PATH::LINE]] make [[PATH::NUM::LINE]].
-;; Abbreviate path used."
-;;   (let ((org-stored-links) ; replace with local one
-;;         (link
-;;          (cond
-;;           ;; - Images mode 1
-;;           ((derived-mode-p 'image-dired-thumbnail-mode)
-;;            ;; create link by self
-;;            (concat "file:" (abbreviate-file-name (image-dired-original-file-name))))
-;;           ;; - Images mode 2
-;;           ((derived-mode-p 'image-dired-image-mode)
+;; (if (not (string-equal (org-links-create-link "file:.././string") "[[file:~/sources/string]]"))
+;;     (error "org-links"))
 
-;;            (buffer-file-name (buffer-base-buffer)))
-;;           ;; - in Org - <<target>>
-;;           ;; ((and (buffer-file-name (buffer-base-buffer))
-;;           ;;       (derived-mode-p 'org-mode)
-;;           ;;       (org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]" 1))
-;;           ;;  (match-string 1)
-;;           ;;  )
+;;; - Copy to clipboard
+(defun org-links-store-extended (arg)
+  "Store link to `kill-ring' clipboard.
+ARG is universal argument.
+Count lines from 1 like `line-number-at-pos' function does.
+For usage with original Org `org-open-at-point-global' function."
+  (interactive "P\n")
+  (let ((org-link-context-for-files nil)
+        link)
+    (cond
+     ;; - Images mode 1
+     ((derived-mode-p (intern "image-dired-thumbnail-mode"))
+      (setq link (org-links-create-link (concat "file:" (funcall (intern "image-dired-original-file-name"))))))
+     ;; - Images mode 2
+     ((derived-mode-p (intern "image-dired-image-mode"))
+      (setq link (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer))))))
 
-;;           ;; else
-;;           ;; - Call `org-store-link'
-;;           (t
-;;            (apply func-call args)
-;;            ;; - link-stored returned by `org-store-link'
-;;            (let ((link-stored (substring-no-properties (car (car org-stored-links))))
-;;                  (all-prefixes (org-link-types)))
-;;              (print (list "link-stored" org-stored-links))
-;;              ;; - Split link-stored
-;;              (let ((desc (apply #'mapconcat #'identity (cdr (string-split link-stored "::")) '("::")))
-;;                    (before-desc (car (string-split link-stored "::")))
-;;                    ;; detect type, like in `org-insert-link'
-;;                    (type
-;;                     (cond
-;;                      ((and all-prefixes
-;;                            (string-match (rx-to-string `(: string-start (submatch (or ,@all-prefixes)) ":")) link-stored))
-;;                       (match-string 1 link-stored))
-;;                      ((file-name-absolute-p link-stored) "file")
-;;                      ((string-match "\\`\\.\\.?/" link-stored) "file"))))
-;;                ;; (print (list "type" type))
-;;                (print (list "desc" desc))
-;;                ;; (link-path (string-split link "::")
-;;                ;; (let* ((link-element (with-temp-buffer
-;;                ;;                (let ((org-inhibit-startup nil))
-;;                ;;                  (insert link)
-;;                ;;                  (org-mode)
-;;                ;;                  (goto-char (point-min))
-;;                ;;                  (org-element-link-parser))))
-;;                ;;        (type (org-element-property :type link-element))
-;;                ;;        (path (org-element-property :path link-element))
-;;                ;;        (follow (org-link-get-parameter type :follow))
-;;                ;;        (option (org-element-property :search-option link-element))) ;; after ::
-;;                ;;   (print (list type path option follow))
-;;                ;;   (print link-element))
-;;                (if (and (string-equal type "file")
-;;                         (or (derived-mode-p 'prog-mode)
-;;                             (derived-mode-p 'text-mode)
-;;                             (derived-mode-p 'fundamental-mode))
-;;                         (not (org-links--begins-with-single-asterisk-p desc))) ; not header
-;;                    ;; if pointer at <<target>>
-;;                    (if (and (not (string-empty-p desc)) (org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]" 1))
-;;                        (concat before-desc "::" (number-to-string (line-number-at-pos)) "::<<" (match-string 1) ">>")
-;;                      ;; else - file links
-;;                      (let* ((desc (if (not (string-empty-p desc)) (concat "::" desc)))
-;;                             (link (concat before-desc "::" (number-to-string (line-number-at-pos))
-;;                                           (if org-link-context-for-files desc) )))
-;;                        link))
-;;                  ;; else - original
-;;                  link-stored)))))))
-;;     ;; - Final link preparation
-;;     (let ((link2 (concat "[[" link "]]")))
-;;       (kill-new link2)
-;;       (message (concat link2 "\t- copied to clipboard"))
-;;       link2)))
+     ;; ((use-region-p)
+     ;;  (save-excursion
+     ;;    (goto-char (region-beginning))
+     ;;    (concat
+     ;;    (progn (goto-char (region-end)) )
+     ;;    )))
 
+
+     ;; - PATH::NUM::LINE - for Programming modes and fundamental
+     ;; store without fuzzy content and add line number."
+     ((or (derived-mode-p 'prog-mode)
+          (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
+          (derived-mode-p 'fundamental-mode))
+      (setq link (substring-no-properties (org-store-link nil)))
+      (setq link (if arg
+                     ;; store in PATH::NUM::LINE format
+                     (org-links-create-link (concat (substring link 2 (- (length link) 2)) ; path
+                             "::" (number-to-string (line-number-at-pos))
+                             "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                   ;; else
+                   (org-links-create-link (concat (substring link 2 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)))))))
+     ;; - Org mode
+     (t
+      (setq link (substring-no-properties (org-store-link nil)))
+      (setq link (if arg
+                     ;; store in PATH::NUM::LINE format
+                     (org-links-create-link (concat (substring link 2 (- (length link) 2))
+                             "::" (number-to-string (line-number-at-pos))
+                             "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                   ;; else
+                   (setq org-link-context-for-files t) ; local in let
+                   (substring-no-properties (org-store-link nil))))))
+    (kill-new link)
+    (message (concat link "\t- copied to clipboard"))))
+
+;;; - Fallback "Save to clipboard" without requirement of org-links this package
+(defun org-links-store-link-fallback (arg)
+  "Copy Org-mode link to kill ring and clipboard from any mode.
+Without a  prefix argument  ARG, copies a  link PATH::NUM  (current line
+number).
+Count lines from 1 like `line-number-at-pos' function does.
+With a universal argument C - u, copies a link in the form PATH::LINE.
+Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
+  (interactive "P")
+  (let ((link
+         (if (derived-mode-p 'image-dired-thumbnail-mode)
+             (concat "[[file:" (funcall (intern "image-dired-original-file-name")) "]]")
+           ;; - else
+           (if (derived-mode-p 'image-dired-image-mode)
+               (concat "[[file:" (buffer-file-name (buffer-base-buffer)) "]]")
+             ;; - else - programming
+             (if (and (not arg)
+                      (or (derived-mode-p 'prog-mode)
+                          (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
+                          (derived-mode-p 'fundamental-mode)))
+                 (let* ((org-link-context-for-files)
+                        (link (substring-no-properties (org-store-link nil))))
+                   (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))
+               ;; else - prog with argument or Org - with line for fuzzy search
+               (substring-no-properties (org-store-link nil)))))))
+    (kill-new link)
+    (message  "%s\t- copied to clipboard" link)))
 ;;; - Open link
 (defun org-links--line-number-at-string-pos (string pos)
   "Return the line number at position POS in STRING."
@@ -582,79 +591,91 @@ To create proper regex, string should be first be processed with
                 string))
     (error "Assert failed")))
 
-;;; - Simple store link
+;;; - old
 
-(defun org-links-store-extended (arg)
-  "Store link to `kill-ring' clipboard.
-ARG is universal argument.
-Count lines from 1 like `line-number-at-pos' function does.
-For usage with original Org `org-open-at-point-global' function."
-  (interactive "P\n")
-  (let ((org-link-context-for-files nil)
-        link)
-    (cond
-     ;; - Images mode 1
-     ((derived-mode-p (intern "image-dired-thumbnail-mode"))
-      (setq link (concat "file:" (abbreviate-file-name (funcall (intern "image-dired-original-file-name"))))))
-     ;; - Images mode 2
-     ((derived-mode-p (intern "image-dired-image-mode"))
-      (setq link (buffer-file-name (buffer-base-buffer))))
+;; (defun org-links--begins-with-single-asterisk-p (s)
+;;   "For checking that S link was not created for Org header.
+;; That have format *header-text."
+;;   (and (string-prefix-p "*" s)
+;;        (> (length s) 1)
+;;        (not (eq (aref s 1) ?*))))
 
-     ;; - Programming mode store without fuzzy content and add line number."
-     ((or (derived-mode-p 'prog-mode)
-          (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
-          (derived-mode-p 'fundamental-mode))
-      (setq link (org-store-link nil))
-      (setq link (if arg
-                     ;; store in PATH::NUM::LINE format
-                     (concat (substring link 0 (- (length link) 2))
-                             "::" (number-to-string (line-number-at-pos))
-                             "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-                             "]]")
-                   ;; else
-                   (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))))
-     ;; - Org mode
-     (t
-      (setq link (org-store-link nil))
-      (setq link (if arg
-                     ;; store in PATH::NUM::LINE format
-                     (concat (substring link 0 (- (length link) 2))
-                             "::" (number-to-string (line-number-at-pos))
-                             "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-                             "]]")
-                   ;; else
-                   (setq org-link-context-for-files t)
-                   (org-store-link nil)))))
-    (kill-new link)
-    (message (concat link "\t- copied to clipboard"))))
+;; (defun org-links--org-store-link (func-call &rest args)
+;;   "From [[PATH::LINE]] make [[PATH::NUM::LINE]].
+;; Abbreviate path used."
+;;   (let ((org-stored-links) ; replace with local one
+;;         (link
+;;          (cond
+;;           ;; - Images mode 1
+;;           ((derived-mode-p 'image-dired-thumbnail-mode)
+;;            ;; create link by self
+;;            (concat "file:" (abbreviate-file-name (image-dired-original-file-name))))
+;;           ;; - Images mode 2
+;;           ((derived-mode-p 'image-dired-image-mode)
 
-;;; - Fallback simple function without requirement of org-links this package
-(defun org-links-store-link-fallback (arg)
-  "Copy Org-mode link to kill ring and clipboard from any mode.
-Without a  prefix argument  ARG, copies a  link PATH::NUM  (current line
-number).
-Count lines from 1 like `line-number-at-pos' function does.
-With a universal argument C - u, copies a link in the form PATH::LINE.
-Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
-  (interactive "P")
-  (let ((link
-         (if (derived-mode-p 'image-dired-thumbnail-mode)
-             (concat "file:" (abbreviate-file-name (funcall (intern "image-dired-original-file-name"))))
-           ;; - else
-           (if (derived-mode-p 'image-dired-image-mode)
-                (buffer-file-name (buffer-base-buffer))
-             ;; - else
-             (if (and (not arg)
-                      (or (derived-mode-p 'prog-mode)
-                          (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
-                          (derived-mode-p 'fundamental-mode)))
-                 (let* ((org-link-context-for-files)
-                        (link (org-store-link nil)))
-                   (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))
-               ;; else - with line for fuzzy search
-               (org-store-link nil))))))
-    (kill-new link)
-    (message  "%s\t- copied to clipboard" link)))
+;;            (buffer-file-name (buffer-base-buffer)))
+;;           ;; - in Org - <<target>>
+;;           ;; ((and (buffer-file-name (buffer-base-buffer))
+;;           ;;       (derived-mode-p 'org-mode)
+;;           ;;       (org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]" 1))
+;;           ;;  (match-string 1)
+;;           ;;  )
+
+;;           ;; else
+;;           ;; - Call `org-store-link'
+;;           (t
+;;            (apply func-call args)
+;;            ;; - link-stored returned by `org-store-link'
+;;            (let ((link-stored (substring-no-properties (car (car org-stored-links))))
+;;                  (all-prefixes (org-link-types)))
+;;              (print (list "link-stored" org-stored-links))
+;;              ;; - Split link-stored
+;;              (let ((desc (apply #'mapconcat #'identity (cdr (string-split link-stored "::")) '("::")))
+;;                    (before-desc (car (string-split link-stored "::")))
+;;                    ;; detect type, like in `org-insert-link'
+;;                    (type
+;;                     (cond
+;;                      ((and all-prefixes
+;;                            (string-match (rx-to-string `(: string-start (submatch (or ,@all-prefixes)) ":")) link-stored))
+;;                       (match-string 1 link-stored))
+;;                      ((file-name-absolute-p link-stored) "file")
+;;                      ((string-match "\\`\\.\\.?/" link-stored) "file"))))
+;;                ;; (print (list "type" type))
+;;                (print (list "desc" desc))
+;;                ;; (link-path (string-split link "::")
+;;                ;; (let* ((link-element (with-temp-buffer
+;;                ;;                (let ((org-inhibit-startup nil))
+;;                ;;                  (insert link)
+;;                ;;                  (org-mode)
+;;                ;;                  (goto-char (point-min))
+;;                ;;                  (org-element-link-parser))))
+;;                ;;        (type (org-element-property :type link-element))
+;;                ;;        (path (org-element-property :path link-element))
+;;                ;;        (follow (org-link-get-parameter type :follow))
+;;                ;;        (option (org-element-property :search-option link-element))) ;; after ::
+;;                ;;   (print (list type path option follow))
+;;                ;;   (print link-element))
+;;                (if (and (string-equal type "file")
+;;                         (or (derived-mode-p 'prog-mode)
+;;                             (derived-mode-p 'text-mode)
+;;                             (derived-mode-p 'fundamental-mode))
+;;                         (not (org-links--begins-with-single-asterisk-p desc))) ; not header
+;;                    ;; if pointer at <<target>>
+;;                    (if (and (not (string-empty-p desc)) (org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]" 1))
+;;                        (concat before-desc "::" (number-to-string (line-number-at-pos)) "::<<" (match-string 1) ">>")
+;;                      ;; else - file links
+;;                      (let* ((desc (if (not (string-empty-p desc)) (concat "::" desc)))
+;;                             (link (concat before-desc "::" (number-to-string (line-number-at-pos))
+;;                                           (if org-link-context-for-files desc) )))
+;;                        link))
+;;                  ;; else - original
+;;                  link-stored)))))))
+;;     ;; - Final link preparation
+;;     (let ((link2 (concat "[[" link "]]")))
+;;       (kill-new link2)
+;;       (message (concat link2 "\t- copied to clipboard"))
+;;       link2)))
+
 
 ;;; provide
 (provide 'org-links)

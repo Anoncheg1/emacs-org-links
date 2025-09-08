@@ -30,26 +30,36 @@ This is the solution to some Org links problems:
 (require 'ol)
 (global-set-key (kbd "C-c C-o") #'org-open-at-point-global) ; optional
 
-(defun my/org-store-link-fallback (arg)
-  "Copy link to kill-ring clipboard.
-In  form  PATH::NUM,  if  with  universal argument  C-u,  then  in  form
-PATH::LINE."
-  (interactive "P\n")
-  (let ((link (if (and (not arg)
-                       (or (derived-mode-p 'prog-mode)
-                           (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
-                           (derived-mode-p 'fundamental-mode)))
-                   (let* ((org-link-context-for-files)
-                          (link (org-store-link nil)))
-                     (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))
-                 ;; else - with line for fuzzy search
-                 (org-store-link nil))))
+(defun org-links-store-link-fallback (arg)
+  "Copy Org-mode link to kill ring and clipboard from any mode.
+Without a  prefix argument  ARG, copies a  link PATH::NUM  (current line
+number).
+Count lines from 1 like `line-number-at-pos' function does.
+With a universal argument C - u, copies a link in the form PATH::LINE.
+Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
+  (interactive "P")
+  (let ((link
+         (if (derived-mode-p 'image-dired-thumbnail-mode)
+             (concat "[[file:" (funcall (intern "image-dired-original-file-name")) "]]")
+           ;; - else
+           (if (derived-mode-p 'image-dired-image-mode)
+               (concat "[[file:" (buffer-file-name (buffer-base-buffer)) "]]")
+             ;; - else - programming
+             (if (and (not arg)
+                      (or (derived-mode-p 'prog-mode)
+                          (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
+                          (derived-mode-p 'fundamental-mode)))
+                 (let* ((org-link-context-for-files)
+                        (link (substring-no-properties (org-store-link nil))))
+                   (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))
+               ;; else - prog with argument or Org - with line for fuzzy search
+               (substring-no-properties (org-store-link nil)))))))
     (kill-new link)
-    (message (concat link "\t- copied to clipboard"))))
+    (message  "%s\t- copied to clipboard" link)))
 
 (add-to-list 'load-path "/home/g/sources/emacs-org-links")
 (if (not (require 'org-links nil 'noerror))
-    (global-set-key (kbd "C-c w") #'my/org-store-link-fallback)
+    (global-set-key (kbd "C-c w") #'org-links-store-link-fallback)
   ;; else - org-links have been loaded
   (global-set-key (kbd "C-c w") #'org-links-store-extended)
   ;; For support opening links in format file:PATH::NUM::line

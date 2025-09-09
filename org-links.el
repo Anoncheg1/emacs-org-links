@@ -60,6 +60,7 @@
 ;; - [[ads]] -> <<ads>> # target
 ;; - "::*text" - fuzzy link to header
 ;; - "::asd" - link to target or fuzzy search
+;; - "::234" - number of line supported only with "file:"
 ;;
 ;; Org links: ol.el store links to headers if it have one otherwise it
 ;;   use fuzzy search if you use:
@@ -85,10 +86,16 @@
 ;; Storing: `org-store-link' store link to org-stored-links variable
 ;; Org: `org-stored-links' and `org-insert-link-global' put link to buffer.
 
-;; Opening: `org-open-at-point' -> `org-link-open' ; org.el
-;;  or everywhere: `org-open-at-point-global' ; org.el
+;; Opening 1): `org-open-at-point'
+;; -> `org-link-open' ; org.el
+;;   - for "files:" `org-link-open-as-file' -> `org-open-file' (handle "::23", cause troubles) -> `org-link-search'
+;;   - for local links `org-link--search-radio-target' and `org-link-search' used
+
+;; Opening 2): `org-open-at-point-global' ; org.el
 ;; -> `org-link-open-from-string' -> `org-link-open' (element)
-;; -> `org-link-open-as-file' -> `org-open-file' -> `org-link-search' for fuzzy
+
+;; `org-link-search' (for curret buffer) call
+;; `org-execute-file-search-functions' or search link.
 
 ;; Org config:
 ;; - org-link-context-for-files - default t, store fuzzy text
@@ -168,18 +175,21 @@ For usage with original Org `org-open-at-point-global' function."
     (cond
      ;; - Images mode 1
      ((derived-mode-p (intern "image-dired-thumbnail-mode"))
-      (setq link (org-links-create-link (concat "file:" (funcall (intern "image-dired-original-file-name"))))))
+      (setq link
+            ;; (org-links-create-link
+                  (concat "file:" (funcall (intern "image-dired-original-file-name")))))
      ;; - Images mode 2
      ((derived-mode-p (intern "image-dired-image-mode"))
-      (setq link (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer))))))
+      (setq link
+            ;; (org-links-create-link
+             (concat "file:" (buffer-file-name (buffer-base-buffer)))))
 
-     ;; ((use-region-p)
-     ;;  (save-excursion
-     ;;    (goto-char (region-beginning))
-     ;;    (concat
-     ;;    (progn (goto-char (region-end)) )
-     ;;    )))
-
+     ((use-region-p)
+      (let ((path (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer))))))
+        (setq link (concat (substring path 0 (- (length path) 2)) "::"
+                (number-to-string (line-number-at-pos (region-beginning))) "-" (number-to-string (line-number-at-pos (region-end)))
+                "]]"
+                ))))
 
      ;; - PATH::NUM::LINE - for Programming modes and fundamental
      ;; store without fuzzy content and add line number."
@@ -223,7 +233,7 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
            ;; - else
            (if (derived-mode-p 'image-dired-image-mode)
                (concat "[[file:" (buffer-file-name (buffer-base-buffer)) "]]")
-             ;; - else - programming
+             ;; - else - programming, text and fundamental
              (if (and (not arg)
                       (or (derived-mode-p 'prog-mode)
                           (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
@@ -235,311 +245,7 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
                (substring-no-properties (org-store-link nil)))))))
     (kill-new link)
     (message  "%s\t- copied to clipboard" link)))
-;;; - Open link
-(defun org-links--line-number-at-string-pos (string pos)
-  "Return the line number at position POS in STRING."
-  (1+ (cl-count ?\n (substring string 0 pos))))
-
-
-(defun org-links-find-first-two-exact-lines-in-buffer-optimized (search-string-regex &optional get-positions n)
-  "Find first N or two exactly matching lines to SEARCH-STRING-REGEX.
-Search in current buffer.
-Returns list of line numbers or empty list.
-Count lines from 1 like `line-number-at-pos' function does.
-If GET-POSITIONS is  non-nil, returns list of buffer  positions for each
-match otherwisde line numbers."
-  (let* ((threshold org-links-threshold-search-link-optimization-max-file)
-         (bufsize (- (point-max) (point-min)))
-         (n (or n 2)))
-    (if (< bufsize threshold)
-      ;; - Fast approach: whole buffer as a string
-      (let ((buf-str (buffer-substring-no-properties (point-min) (point-max)))
-            (start 0)
-            (results1 '()))
-        ;; (print (list start (string-match search-string-regex buf-str start)))
-        (while (and (< (length results1) n)
-                    (string-match search-string-regex buf-str start))
-          ;; (print (list (< (length results1) n) (string-match search-string-regex buf-str start)))
-          ;; convert pos to line number
-          (push (if get-positions (match-beginning 0)
-                  ;; else
-                  (org-links--line-number-at-string-pos buf-str (match-beginning 0)))
-                  results1)
-          (setq start (match-end 0)))
-        (nreverse results1))
-      ;; - Large buffer fallback: per-line traversal without copying whole buffer.
-      (save-excursion
-        (goto-char (point-min))
-        (let ((results2 '())
-              (ln 1))
-          (while (and (< (length results2) n)
-                      (not (eobp)))
-
-            (let ((line (buffer-substring-no-properties
-                         (line-beginning-position)
-                         (line-end-position))))
-              ;; (print (list (string-full-match search-string-regex line) search-string-regex line))
-              (when (and (not (string-empty-p line)) ; skip empty lines
-                     (org-links-string-full-match search-string-regex line))
-                (push (if get-positions (line-beginning-position) ln) results2))
-              (forward-line 1)
-              (setq ln (1+ ln))))
-            (nreverse results2))))))
-
-(defun org-links--find-line (link-org-string)
-  "Return empty list or with numbers that match LINK-ORG-STRING."
-  (let ((link (concat "^" (org-links-org--unnormalize-string (regexp-quote link-org-string)) "$")))
-    (org-links-find-first-two-exact-lines-in-buffer-optimized link)))
-
-;; (org-links--find-line (regexp-quote "(ln 1))"))
-;; (string-match "^[ 	]*))$" "ssd\n))\n vv")
-
-;; (let ((search-string ";; (list name"))
-;;   (let ((buf-str (substring-no-properties ";;                 (list name"))
-;;         (regexp (concat "^" ((regexp-quote search-string) "$"))
-;;         (start 0)
-;;         (results1 '()))
-;;     (print regexp)
-;;     (string-full-match regexp buf-str))))
-
-;; (defvar org-links--target-re "\\(^\\|[^<]\\)\\(<<\\([^<][^>]*\\)>>\\)"
-;;   "Find Org link type called target.
-;; This [^<]<<\\([^<>]+\\)>>[^>] from `org-store-link' require symbols before and after target.")
-
-;; ;; (let ((s "vvd<<asd>>vv"))
-;; ;;   (when (string-match "[^<]<<\\([^<>]+\\)>>[^>]" s)
-;; ;;     (match-string 1 s))) ;; => "asd"
-
-;; ;; (let ((s "<<asd>>"))
-;; ;;   (when (string-match "[^<]<<\\([^<>]+\\)>>[^>]" s)
-;; ;;     (match-string 1 s))) ;; => nil
-
-
-;; (if (not (let ((s "<<asd>>"))
-;;            (org-links-string-full-match org-links--target-re s)))
-;;     (error "<<asd>>1"))
-
-;; (if (not (string-equal (let ((s "<<asd>>"))
-;;       (when (string-match org-links--target-re s)
-;;         (match-string 3 s)))
-;;               "asd"))
-;;     (error "<<asd>>2"))
-
-(defun org-links--org-link-open-as-file (orig-fun &rest args)
-  "Extend `org-link-open-as-file' that is ORIG-FUN with ARGS.
-For file:/path/file::NUM::DESC.
-Advice for `org-link-open-as-file'.
-We look for TEXT in file and if found and only one go there.
-Otherwise, go to NUM.
-Return True, if we identify and follow a link of el."
-  (if-let* ((path (car args))
-            (in-emacs (cdr args))
-            (num (and (string-match "::\\([0-9]+\\)::\\(.*\\)" path)
-                      (match-string 1 path)))
-            (line (match-string 2 path))) ;; may be ""
-
-      ;; (print (list "org-links--org-link-open-as-file" num line (string-empty-p line)))
-      (if
-          ;; - PATH::NUM::
-          (string-empty-p line)
-          ;; - Call with ("PATH::NUM" in-emacs)
-          (apply orig-fun (list (substring path 0 (- (match-beginning 2) 2)) in-emacs))
-        ;; - else - Num and text
-        ;; (print (list "aaaaaaaaaaaaa" (list (substring path 0 (match-beginning 0)) in-emacs)))
-        ;; open file
-        (apply orig-fun (list (substring path 0 (match-beginning 0)) in-emacs))
-        (let ((line-position (org-links--find-line line)))
-          ;; (print (list "line-position" line-position (eq (length line-position) 1)))
-          (goto-char (point-min)) ; move to begining of buffer for call of `forward-line' after
-          (if (eq (length line-position) 1) ;; found exactly one
-              (forward-line (1- (car line-position)))
-            ;; else - not found or many of them, we use  num to jump
-            (forward-line (1- (string-to-number num))))))
-    ;; else
-    (apply orig-fun args)))
-
-    ;; ;; (print desc)
-    ;; ;; (print el)
-    ;; ;; (string-match "^\\([0-9]+\\)::\\(.*\\)" "232::") ; => 0
-    ;; ;; (string-match "^\\([0-9]+\\)::\\(.*\\)" "::aasd") ; = nil
-
-    ;; ;; ;; (let ((s "vvd<<asd>>vv"))
-    ;; ;; ;;   (when (string-match "[^<]<<\\([^<>]+\\)>>[^>]" s)
-    ;; ;; ;;     (match-string 1 s))) ;; => "asd"
-    ;; ;; ;; (substring-no-properties (match-string 0))
-    ;; (when (and desc (string-match "^\\([0-9]+\\)::\\(.*\\)" desc))
-    ;;   (print (list "desc111111111" desc (zerop (match-beginning 0)) (= (match-end 0) (length desc))))
-    ;;   (let ((num (match-string 1 desc))
-    ;;         (text (match-string 2 desc))
-    ;;         ;; (tagrget-m (string-match "\\(^\\|[^<]\\)\\(<<\\([^<][^>]*\\)>>\\)" desc))
-    ;;         ) ; may be "" empty
-    ;;     ;; FILE::NUM::DESC
-    ;;     (print (list "desc here" desc))
-    ;;     (cond
-    ;;      ;; - PATH::NUM
-    ;;      ((string-empty-p text)
-    ;;       (print "ww")
-    ;;       ;; Modify and open link:
-    ;;       ;; (let ((el (org-element-context)))
-    ;;       (org-element-put-property el :search-option num)
-    ;;       ;; (org-element-put-property el :raw-link "file:~/tmp/emacs-file2025-08-26.org::23")
-    ;;       (org-link-open-from-string (org-element-interpret-data el))
-    ;;       (goto-line (number-to-string num))
-    ;;       )
-
-    ;;      ;; - FILE::NUM::<<target>>
-    ;;      ((org-links-string-full-match org-links--target-re text)
-    ;;       (print "target")
-    ;;       (match-string 3 text)
-    ;;       )
-    ;;      ;; - Num and text
-    ;;      (t
-    ;;       (print "vvvv")
-    ;;       ;; open path
-    ;;       (org-link-open-as-file path
-    ;;                              (pcase (org-element-property :application el)
-    ;;                                ("emacs" 'emacs)
-    ;;                                ("sys" 'system))) ; org-link-open
-    ;;       ;; In path buffer:
-    ;;       (print (list "aaaaaaaaaaaaa" text))
-    ;;       (if (org-links-string-full-match org-links--target-re text)
-
-
-    ;;           ;; else -
-    ;;       (let ((line-position (org-links--find-line text)))
-    ;;         (print (list "line-position" line-position (eq (length line-position) 1)))
-    ;;         (if (eq (length line-position) 1) ;; found exactly one
-    ;;             (goto-line (car line-position))
-    ;;           ;; else - not found or many of them, we use  num to jump
-    ;;           (goto-line (string-to-number num)))))))))))
-
-;; (defun my/org-open-at-point-functions-impl ()
-;;   "Activation for opening links support.
-;; Hook implementation, that added to `org-open-at-point-functions'.
-;; Don't work for `org-open-at-point-global'. :-("
-;;   (if-let* ((el (org-element-context))
-;;             (el-type (org-element-type el))
-;;             (type-str (org-element-property :type el)))
-;;       (print (list "my/org-open-at-point-functions-impl" type-str))
-;;     (if (and (eql el-type 'link) (string-equal type-str "file"))
-;;         (org-links--open el))))
-
-
-;;; - Alternative solution (old)
-;; (defun my/org-link--file-link-to-here ()
-;;   "Return as (LINK . DESC) a file link with search string to here.
-;; Called only from `org-store-link'."
-;;   (let ((link (concat "file:"
-;;                       (abbreviate-file-name
-;;                        (buffer-file-name (buffer-base-buffer)))))
-;;         desc)
-
-;;       (pcase (org-link-precise-link-target)
-;;         (`nil nil)
-;;         (`(,search-string ,search-desc ,_position)
-;;          (if org-link-context-for-files
-;;              (progn
-;;                (setq link (format "%s::%s::%s" link (line-number-at-pos) search-string))
-;;                (setq desc search-desc))
-;;            ;; else - no context but we save line number at least
-;;            (progn
-;;                (setq link (format "%s::%s" link (line-number-at-pos)))
-;;                (setq desc search-desc))
-;;            )))
-;;     (cons link desc)))
-
-;; (advice-add 'org-link--file-link-to-here :override #'my/org-link--file-link-to-here)
-
-;; (defun my/org-create-file-search-functions-imp ()
-;;   " Called from `org-store-link'.
-;; `org-link--file-link-to-here' reimplementation.
-;; Return part after \"file:path::\" of link."
-;; (if (derived-mode-p 'image-dired-thumbnail-mode)
-;; ;;         ;; create link by self
-;; ;;         (setq link (concat "file:" (image-dired-original-file-name)))
-;;   (let ((ret
-;;          ((cond
-;;            ((derived-mode-p 'image-dired-thumbnail-mode)
-
-
-;;          (pcase (org-link-precise-link-target)
-;;            (`nil nil)
-;;            (`(,search-string ,search-desc ,_position)
-;;             (if org-link-context-for-files
-;;                 (format "%s::%s" (line-number-at-pos) search-string)
-;;               ;; else - no context but we save line number at least
-;;               (number-to-string (line-number-at-pos)))))))
-;;       ;; save to buffer
-;;       (kill-new (concat "[[file:" (abbreviate-file-name buffer-file-name)
-;;                         "::" ret "]]"))
-;;       ret))
-
-;;; - (old) Fix for creation of link, disable removing of leading and ending "(" and ")"
-;; (defun org-link-precise-link-target ()
-;;   "Determine search string and description for storing a link.
-
-;; If a search string (see `org-link-search') is found, return
-;; list (SEARCH-STRING DESC POSITION).  Otherwise, return nil.
-
-;; If there is an active region, the contents (or a part of it, see
-;; `org-link-context-for-files') is used as the search string.
-
-;; In Org buffers, if point is at a named element (such as a source
-;; block), the name is used for the search string.  If at a heading,
-;; its CUSTOM_ID is used to form a search string of the form
-;; \"#id\", if present, otherwise the current heading text is used
-;; in the form \"*Heading\".
-
-;; If none of those finds a suitable search string, the current line
-;; is used as the search string.
-
-;; The description DESC is nil (meaning the user will be prompted
-;; for a description when inserting the link) for search strings
-;; based on a region or the current line.  For other cases, DESC is
-;; a cleaned-up version of the name or heading at point.
-
-
-
-;; POSITION is the buffer position at which the search string
-;; matches."
-;;   (let* ((region (org-link--context-from-region))
-;;          (result
-;;           (cond
-;;            (region
-;;             (list (org-link--normalize-string region t)
-;;                   nil
-;;                   (region-beginning)))
-
-;;            ((derived-mode-p 'org-mode)
-;;             (let* ((element (org-element-at-point))
-;;                    (name (org-element-property :name element))
-;;                    (heading (org-element-lineage element '(headline inlinetask) t))
-;;                    (custom-id (org-entry-get heading "CUSTOM_ID")))
-;;               (cond
-;;                (name
-;;                 (list name
-;;                       name
-;;                       (org-element-begin element)))
-;;                ((org-before-first-heading-p)
-;;                 (list (org-link--normalize-string (org-current-line-string) t)
-;;                       nil
-;;                       (line-beginning-position)))
-;;                (heading
-;;                 (list (if custom-id (concat "#" custom-id)
-;;                         (org-link-heading-search-string))
-;;                       (org-link--normalize-string
-;;                        (org-get-heading t t t t))
-;;                       (org-element-begin heading))))))
-
-;;            ;; Not in an org-mode buffer, no region
-;;            (t
-;;             (list (org-link--normalize-string (org-current-line-string) nil) ;; <------ Fix: without = nil
-;;                   nil
-;;                   (line-beginning-position))))))
-
-;;     ;; Only use search option if there is some text.
-;;     (when (org-string-nw-p (car result))
-;;       result)))
+;;; - help functions: unnormalize link
 
 (defun org-links-org-link--normalize-string (string &optional context)
   "Modified version of `org-link--normalize-string'.
@@ -591,91 +297,230 @@ To create proper regex, string should be first be processed with
                 string))
     (error "Assert failed")))
 
-;;; - old
+;;; - find LINE
+(defun org-links--line-number-at-string-pos (string pos)
+  "Return the line number at position POS in STRING."
+  (1+ (cl-count ?\n (substring string 0 pos))))
 
-;; (defun org-links--begins-with-single-asterisk-p (s)
-;;   "For checking that S link was not created for Org header.
-;; That have format *header-text."
-;;   (and (string-prefix-p "*" s)
-;;        (> (length s) 1)
-;;        (not (eq (aref s 1) ?*))))
 
-;; (defun org-links--org-store-link (func-call &rest args)
-;;   "From [[PATH::LINE]] make [[PATH::NUM::LINE]].
-;; Abbreviate path used."
-;;   (let ((org-stored-links) ; replace with local one
-;;         (link
-;;          (cond
-;;           ;; - Images mode 1
-;;           ((derived-mode-p 'image-dired-thumbnail-mode)
-;;            ;; create link by self
-;;            (concat "file:" (abbreviate-file-name (image-dired-original-file-name))))
-;;           ;; - Images mode 2
-;;           ((derived-mode-p 'image-dired-image-mode)
+(defun org-links-find-first-two-exact-lines-in-buffer-optimized (search-string-regex &optional get-positions n)
+  "Find first N or two exactly matching lines to SEARCH-STRING-REGEX.
+Search in current buffer.
+Returns list of line numbers or empty list.
+Count lines from 1 like `line-number-at-pos' function does.
+If GET-POSITIONS is  non-nil, returns list of buffer  positions for each
+match otherwisde line numbers."
+  (let* ((threshold org-links-threshold-search-link-optimization-max-file)
+         (bufsize (- (point-max) (point-min)))
+         (n (or n 2)))
+    (if (< bufsize threshold)
+      ;; - Fast approach: whole buffer as a string
+      (let ((buf-str (buffer-substring-no-properties (point-min) (point-max)))
+            (start 0)
+            (results1 '()))
+        ;; (print (list start (string-match search-string-regex buf-str start)))
+        (while (and (< (length results1) n)
+                    (string-match search-string-regex buf-str start))
+          ;; (print (list (< (length results1) n) (string-match search-string-regex buf-str start)))
+          ;; convert pos to line number
+          (push (if get-positions (match-beginning 0)
+                  ;; else
+                  (org-links--line-number-at-string-pos buf-str (match-beginning 0)))
+                  results1)
+          (setq start (match-end 0)))
+        (nreverse results1))
+      ;; - Large buffer fallback: per-line traversal without copying whole buffer.
+      (save-excursion
+        (goto-char (point-min))
+        (let ((results2 '())
+              (ln 1))
+          (while (and (< (length results2) n)
+                      (not (eobp)))
 
-;;            (buffer-file-name (buffer-base-buffer)))
-;;           ;; - in Org - <<target>>
-;;           ;; ((and (buffer-file-name (buffer-base-buffer))
-;;           ;;       (derived-mode-p 'org-mode)
-;;           ;;       (org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]" 1))
-;;           ;;  (match-string 1)
-;;           ;;  )
+            (let ((line (buffer-substring-no-properties
+                         (line-beginning-position)
+                         (line-end-position))))
+              ;; (print (list (string-full-match search-string-regex line) search-string-regex line))
+              (when (and (not (string-empty-p line)) ; skip empty lines
+                     (org-links-string-full-match search-string-regex line))
+                (push (if get-positions (line-beginning-position) ln) results2))
+              (forward-line 1)
+              (setq ln (1+ ln))))
+            (nreverse results2))))))
 
-;;           ;; else
-;;           ;; - Call `org-store-link'
-;;           (t
-;;            (apply func-call args)
-;;            ;; - link-stored returned by `org-store-link'
-;;            (let ((link-stored (substring-no-properties (car (car org-stored-links))))
-;;                  (all-prefixes (org-link-types)))
-;;              (print (list "link-stored" org-stored-links))
-;;              ;; - Split link-stored
-;;              (let ((desc (apply #'mapconcat #'identity (cdr (string-split link-stored "::")) '("::")))
-;;                    (before-desc (car (string-split link-stored "::")))
-;;                    ;; detect type, like in `org-insert-link'
-;;                    (type
-;;                     (cond
-;;                      ((and all-prefixes
-;;                            (string-match (rx-to-string `(: string-start (submatch (or ,@all-prefixes)) ":")) link-stored))
-;;                       (match-string 1 link-stored))
-;;                      ((file-name-absolute-p link-stored) "file")
-;;                      ((string-match "\\`\\.\\.?/" link-stored) "file"))))
-;;                ;; (print (list "type" type))
-;;                (print (list "desc" desc))
-;;                ;; (link-path (string-split link "::")
-;;                ;; (let* ((link-element (with-temp-buffer
-;;                ;;                (let ((org-inhibit-startup nil))
-;;                ;;                  (insert link)
-;;                ;;                  (org-mode)
-;;                ;;                  (goto-char (point-min))
-;;                ;;                  (org-element-link-parser))))
-;;                ;;        (type (org-element-property :type link-element))
-;;                ;;        (path (org-element-property :path link-element))
-;;                ;;        (follow (org-link-get-parameter type :follow))
-;;                ;;        (option (org-element-property :search-option link-element))) ;; after ::
-;;                ;;   (print (list type path option follow))
-;;                ;;   (print link-element))
-;;                (if (and (string-equal type "file")
-;;                         (or (derived-mode-p 'prog-mode)
-;;                             (derived-mode-p 'text-mode)
-;;                             (derived-mode-p 'fundamental-mode))
-;;                         (not (org-links--begins-with-single-asterisk-p desc))) ; not header
-;;                    ;; if pointer at <<target>>
-;;                    (if (and (not (string-empty-p desc)) (org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]" 1))
-;;                        (concat before-desc "::" (number-to-string (line-number-at-pos)) "::<<" (match-string 1) ">>")
-;;                      ;; else - file links
-;;                      (let* ((desc (if (not (string-empty-p desc)) (concat "::" desc)))
-;;                             (link (concat before-desc "::" (number-to-string (line-number-at-pos))
-;;                                           (if org-link-context-for-files desc) )))
-;;                        link))
-;;                  ;; else - original
-;;                  link-stored)))))))
-;;     ;; - Final link preparation
-;;     (let ((link2 (concat "[[" link "]]")))
-;;       (kill-new link2)
-;;       (message (concat link2 "\t- copied to clipboard"))
-;;       link2)))
+(defun org-links--find-line (link-org-string)
+  "Return position that match LINK-ORG-STRING or nil."
+  (let* ((link (concat "^" (org-links-org--unnormalize-string (regexp-quote link-org-string)) "$"))
+         (re (org-links-find-first-two-exact-lines-in-buffer-optimized link)))
+    (if (eq (length re) 1) ;; found exactly one
+        (car re)
+      ;; else
+      nil)))
 
+;; (org-links--find-line (regexp-quote "(ln 1))"))
+;; (string-match "^[ 	]*))$" "ssd\n))\n vv")
+
+;; (let ((search-string ";; (list name"))
+;;   (let ((buf-str (substring-no-properties ";;                 (list name"))
+;;         (regexp (concat "^" ((regexp-quote search-string) "$"))
+;;         (start 0)
+;;         (results1 '()))
+;;     (print regexp)
+;;     (string-full-match regexp buf-str))))
+
+;; (defvar org-links--target-re "\\(^\\|[^<]\\)\\(<<\\([^<][^>]*\\)>>\\)"
+;;   "Find Org link type called target.
+;; This [^<]<<\\([^<>]+\\)>>[^>] from `org-store-link' require symbols before and after target.")
+
+;; ;; (let ((s "vvd<<asd>>vv"))
+;; ;;   (when (string-match "[^<]<<\\([^<>]+\\)>>[^>]" s)
+;; ;;     (match-string 1 s))) ;; => "asd"
+
+;; ;; (let ((s "<<asd>>"))
+;; ;;   (when (string-match "[^<]<<\\([^<>]+\\)>>[^>]" s)
+;; ;;     (match-string 1 s))) ;; => nil
+
+
+;; (if (not (let ((s "<<asd>>"))
+;;            (org-links-string-full-match org-links--target-re s)))
+;;     (error "<<asd>>1"))
+
+;; (if (not (string-equal (let ((s "<<asd>>"))
+;;       (when (string-match org-links--target-re s)
+;;         (match-string 3 s)))
+;;               "asd"))
+;;     (error "<<asd>>2"))
+;;; - Open link - help functions and variablses
+
+;; (let ((path  "234-444"))
+;;                  (string-match "^\\([0-9]+\\)-\\([0-9]+\\)$" path )
+;;                  (list (match-string 1 path) (match-string 2 path))) ; => ("234" "444")
+
+(defun get-position-for-line-number (N)
+  (save-excursion
+    (goto-char (point-min))
+    (forward-line (1- N))
+    (point)))
+
+(defvar org-links-num-num-regexp "^\\([0-9]+\\)-\\([0-9]+\\)$"
+  "Links ::NUM-NUM.")
+(defvar org-links-num-num-line-regexp "^\\([0-9]+\\)-\\([0-9]+\\)::\\(.*\\)$"
+  "Links ::NUM-NUM::LINE.")
+(defvar org-links-num-line-regexp "^\\([0-9]+\\)::\\(.+\\)$"
+  "Links ::NUM::LINE.")
+
+(defun org-links-num-num-enshure-num2-visible (num2-str)
+  (let ((num2 (string-to-number num2-str)))
+    ;; (print (save-excursion
+    ;;                                       (goto-char (point-min))
+    ;;                                       (forward-line (1- num2))
+    ;;                                       (point)))
+    (when (not (pos-visible-in-window-p (save-excursion
+                                          (goto-char (point-min))
+                                          (forward-line (1- num2))
+                                          (point))))
+      (recenter)
+      (when (not (pos-visible-in-window-p (save-excursion
+                                            (goto-char (point-min))
+                                            (forward-line (1- num2))
+                                            (point))))
+        (recenter 1)))))
+
+;;; - Open link - org-execute-file-search-functions +  advice
+(defun org-links-additional-formats (link)
+  "Local search for additional formats in current buffer.
+Called from `org-link-searchs'.
+LINK is string after :: or was just in [[]].
+`org-execute-file-search-in-bibtex' as example."
+  ;; from `org-link-open-as-file' and
+  (cond
+   ;; NUM-NUM
+   ((when-let* ((num1 (and (string-match org-links-num-num-regexp link)
+	                   (match-string 1 link)))
+	        (num2 (match-string 2 link))
+                ;; remove ourself from hook
+                ;; (org-execute-file-search-functions (delq #'org-execute-file-search-functions org-execute-file-search-functions))
+                )
+
+      ;; (goto-char (point-min))
+      ;; (forward-line 23)
+      (org-goto-line (string-to-number num1))
+      ;; (print (list "vvvaa" num2))
+      (org-links-num-num-enshure-num2-visible num2)
+      t
+      ))
+   ;; NUM-NUM::LINE
+   ((when-let* ((num1 (and (string-match org-links-num-num-line-regexp link)
+                           (match-string 1 link)))
+                (num2 (match-string 2 link))
+                (line (match-string 3 link)))
+      ;; use line
+      (let ((n1 (string-to-number num1))
+            (n2 (string-to-number num2)))
+        (if-let ((line-position (org-links--find-line line)))
+            (progn
+              (org-goto-line line-position)
+              (if (> n2 n1) (org-links-num-num-enshure-num2-visible (+ line-position (- n2 n1)))))
+          ;; else - use NUM-NUM
+          (org-goto-line n1)
+          (org-links-num-num-enshure-num2-visible num2))
+        t)))
+   ;; NUM::LINE
+   ((when-let* ((num1 (and (string-match org-links-num-line-regexp link)
+	                   (match-string 1 link)))
+	        (line (match-string 2 link)))
+      ;; use line
+      (if-let ((line-position (org-links--find-line line)))
+          (org-goto-line line-position)
+        ;; else - use NUM
+        (org-goto-line (string-to-number num1))
+        (org-links-num-num-enshure-num2-visible num2))
+      t))))
+
+(defun org-links-org-open-file-advice (orig-fun &rest args)
+  "Fixes for `org-open-file' that cause troubles for additional formats.
+Breaks at NUM-NUM, NUM-NUM::LINE, NUM::LINE."
+  (print args)
+  (seq-let (path in-emacs line search) args
+    (if search
+        (cond
+         ;; NUM-NUM
+         ((when-let* ((num1 (and (string-match org-links-num-num-regexp search)
+	                         (match-string 1 search)))
+	              (num2 (match-string 2 search)))
+            (apply orig-fun (list path in-emacs (string-to-number num1)))
+            (org-links-num-num-enshure-num2-visible num2)
+            t))
+         ;; NUM-NUM::LINE
+         ((when-let* ((num1 (and (string-match org-links-num-num-line-regexp search)
+	                         (match-string 1 search)))
+	              (num2 (match-string 2 search))
+                      (line (match-string 3 search)))
+            (apply orig-fun (list path in-emacs))
+            (if-let ((line-position (org-links--find-line line)))
+                (org-goto-line line-position)
+              ;; else
+              (org-goto-line (string-to-number num1))
+              (org-links-num-num-enshure-num2-visible num2))
+            t))
+         ;; NUM::LINE
+         ((when-let* ((num1 (and (string-match org-links-num-line-regexp search)
+	                         (match-string 1 search)))
+	              (line (match-string 2 search)))
+            (if-let ((line-position (org-links--find-line line)))
+                (org-goto-line line-position)
+              ;; else
+              (org-goto-line (string-to-number num1)))
+            t))
+         (t ;; else
+          (apply orig-fun args)))
+      ;; else
+      (apply orig-fun args)
+      )))
+
+
+;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
+;; (advice-remove 'org-open-file #'org-links-org-open-file-advice)
 
 ;;; provide
 (provide 'org-links)

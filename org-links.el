@@ -154,14 +154,17 @@ instead creating of copy.")
        (= (match-end 0) (length string))))
 
 (defun org-links-create-link (string &optional description)
-  "Apply `org-link-file-path-type' variable.
-We wrap `org-insert-link' function to create final link."
-    (with-temp-buffer
-        (org-insert-link nil string nil)
-        (buffer-substring-no-properties (point-min) (point-max))))
+  "Format path of link according to `org-link-file-path-type' variable.
+We use `org-insert-link' function that have required logic.
+Argument STRING is a org link of file: type.
+DESCRIPTION not used."
+  (setq description description) ;; noqa: unused
+  (with-temp-buffer
+    (org-insert-link nil string nil)
+    (buffer-substring-no-properties (point-min) (point-max))))
 
 ;; (if (not (string-equal (org-links-create-link "file:.././string") "[[file:~/sources/string]]"))
-;;     (error "org-links"))
+;;     (error "Org-links"))
 
 ;;; - Copy to clipboard
 (defun org-links-store-extended (arg)
@@ -266,7 +269,7 @@ spaces from STRING.  CONTEXT ignored."
     string) "[ \t\n\r]+"))
 
 (defun org-links-org--unnormalize-string (string)
-  "Create regex matching string with arbitrary whitespace.
+  "Create regex matching STRING with arbitrary whitespace.
 Reverse of `org-links-org-link--normalize-string.
 Add spaces at begin of line and replace spaces with any number of spaces
 or tabs in the middle.
@@ -358,39 +361,19 @@ match otherwisde line numbers."
 ;;     (print regexp)
 ;;     (string-full-match regexp buf-str))))
 
-;; (defvar org-links--target-re "\\(^\\|[^<]\\)\\(<<\\([^<][^>]*\\)>>\\)"
-;;   "Find Org link type called target.
-;; This [^<]<<\\([^<>]+\\)>>[^>] from `org-store-link' require symbols before and after target.")
-
-;; ;; (let ((s "vvd<<asd>>vv"))
-;; ;;   (when (string-match "[^<]<<\\([^<>]+\\)>>[^>]" s)
-;; ;;     (match-string 1 s))) ;; => "asd"
-
-;; ;; (let ((s "<<asd>>"))
-;; ;;   (when (string-match "[^<]<<\\([^<>]+\\)>>[^>]" s)
-;; ;;     (match-string 1 s))) ;; => nil
-
-
-;; (if (not (let ((s "<<asd>>"))
-;;            (org-links-string-full-match org-links--target-re s)))
-;;     (error "<<asd>>1"))
-
-;; (if (not (string-equal (let ((s "<<asd>>"))
-;;       (when (string-match org-links--target-re s)
-;;         (match-string 3 s)))
-;;               "asd"))
-;;     (error "<<asd>>2"))
 ;;; - Open link - help functions and variablses
 
 ;; (let ((path  "234-444"))
 ;;                  (string-match "^\\([0-9]+\\)-\\([0-9]+\\)$" path )
 ;;                  (list (match-string 1 path) (match-string 2 path))) ; => ("234" "444")
 
-(defun get-position-for-line-number (N)
-  (save-excursion
-    (goto-char (point-min))
-    (forward-line (1- N))
-    (point)))
+;; not used
+;; (defun org-links--get-position-for-line-number (N)
+;;   "N is line number."
+;;   (save-excursion
+;;     (goto-char (point-min))
+;;     (forward-line (1- N))
+;;     (point)))
 
 (defvar org-links-num-num-regexp "^\\([0-9]+\\)-\\([0-9]+\\)$"
   "Links ::NUM-NUM.")
@@ -400,11 +383,10 @@ match otherwisde line numbers."
   "Links ::NUM::LINE.")
 
 (defun org-links-num-num-enshure-num2-visible (num2-str)
+  "For NUM-NUM format, we enshure that NUM is visible when jump.
+NUM2-STR is number of line.
+Recenter screen and Two times check visibility."
   (let ((num2 (string-to-number num2-str)))
-    ;; (print (save-excursion
-    ;;                                       (goto-char (point-min))
-    ;;                                       (forward-line (1- num2))
-    ;;                                       (point)))
     (when (not (pos-visible-in-window-p (save-excursion
                                           (goto-char (point-min))
                                           (forward-line (1- num2))
@@ -422,20 +404,14 @@ match otherwisde line numbers."
 Called from `org-link-searchs'.
 LINK is string after :: or was just in [[]].
 `org-execute-file-search-in-bibtex' as example."
-  ;; from `org-link-open-as-file' and
+  ;; from `org-link-open-as-file'
   (cond
    ;; NUM-NUM
    ((when-let* ((num1 (and (string-match org-links-num-num-regexp link)
 	                   (match-string 1 link)))
-	        (num2 (match-string 2 link))
-                ;; remove ourself from hook
-                ;; (org-execute-file-search-functions (delq #'org-execute-file-search-functions org-execute-file-search-functions))
-                )
+	        (num2 (match-string 2 link)))
 
-      ;; (goto-char (point-min))
-      ;; (forward-line 23)
       (org-goto-line (string-to-number num1))
-      ;; (print (list "vvvaa" num2))
       (org-links-num-num-enshure-num2-visible num2)
       t
       ))
@@ -463,15 +439,17 @@ LINK is string after :: or was just in [[]].
       (if-let ((line-position (org-links--find-line line)))
           (org-goto-line line-position)
         ;; else - use NUM
-        (org-goto-line (string-to-number num1))
-        (org-links-num-num-enshure-num2-visible num2))
+        (org-goto-line (string-to-number num1)))
       t))))
 
 (defun org-links-org-open-file-advice (orig-fun &rest args)
-  "Fixes for `org-open-file' that cause troubles for additional formats.
-Breaks at NUM-NUM, NUM-NUM::LINE, NUM::LINE."
+  "Support for additional formats.
+Argument ORIG-FUN is `org-open-file' that breaks at NUM-NUM,
+NUM-NUM::LINE, NUM::LINE formats.
+Optional argument ARGS is `org-open-file' arguments."
   (print args)
-  (seq-let (path in-emacs line search) args
+  (seq-let (path in-emacs string search) args
+    (setq string string) ;; noqa: unused
     (if search
         (cond
          ;; NUM-NUM
@@ -505,8 +483,7 @@ Breaks at NUM-NUM, NUM-NUM::LINE, NUM::LINE."
          (t ;; else
           (apply orig-fun args)))
       ;; else
-      (apply orig-fun args)
-      )))
+      (apply orig-fun args))))
 
 
 ;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)

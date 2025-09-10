@@ -35,7 +35,11 @@
 ;;; Commentary:
 
 ;; Provided function for copying link to kill ring with additional
-;; format for programming mode.
+;; formats, useful for programming modes.
+;; - [[PATH::NUM::LINE]]
+;; - [[PATH::NUM-NUM::LINE]]
+;; - [[PATH::NUM-NUM]]
+;; - [[PATH::NUM]] creating
 
 ;; For opening links there is advice that extend standard
 ;; org-open-at-point-global and org-open-at-point function used to
@@ -46,6 +50,9 @@
 
 ;; Provided configuration for confirtable usage of Org links.
 ;; Provided additional format of links PATH::NUM::LINE for programming modes.
+
+;; [[PATH::NUM::LINE]] - At opening we search for LINE first, if not
+;; found exactly one, we use NUM line number.
 
 ;; Configuration:
 ;; (require 'org-links)
@@ -82,9 +89,10 @@
 
 ;; ==== How Org links works: ====
 ;; https://orgmode.org/guide/Hyperlinks.html
-;;
+
 ;; Storing: `org-store-link' store link to org-stored-links variable
-;; Org: `org-stored-links' and `org-insert-link-global' put link to buffer.
+;;  `org-stored-links', functions `org-insert-link' and
+;;  `org-insert-link-global' put link to buffer.
 
 ;; Opening 1): `org-open-at-point'
 ;; -> `org-link-open' ; org.el
@@ -94,10 +102,9 @@
 ;; Opening 2): `org-open-at-point-global' ; org.el
 ;; -> `org-link-open-from-string' -> `org-link-open' (element)
 
-;; `org-link-search' (for curret buffer) call
-;; `org-execute-file-search-functions' or search link.
+;; `org-link-search' (for curret buffer) call  `org-execute-file-search-functions' or search link.
 
-;; Org config:
+;; Org configurable variables:
 ;; - org-link-context-for-files - default t, store fuzzy text
 ;; - org-link-search-must-match-exact-headline - if nil search fuzzy
 

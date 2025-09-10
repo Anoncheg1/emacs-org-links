@@ -1,13 +1,17 @@
 # emacs-org-links
-Configuration for using Org links function from ol.el.
-
-And new supported form of links [[PATH::NUM::LINE]]. At opening we search for LINE first, if not found exactly one, we use NUM.
+And new formats of links:
+- [[PATH::NUM::LINE]] - At opening we search for LINE first, if not found exactly one, we use NUM line number.
+- [[PATH::NUM-NUM::LINE]]
+- [[PATH::NUM-NUM]]
+- [[PATH::NUM]] creating
 
 For ex. [[file:./notes/warehouse.el::23::(defun alina (pic))]]
 
+Also, provide configuration for using standard ol.el without requirement of this package.
+
 ## Why?
 
-Show you how to use links right, and more advanced "not strict" link.
+LLMs and fuzzy search will be more effective with additional information, if you want link that point to block of code you will need a range of line numbers
 
 This is the solution to some Org links problems:
 - links sotred without number
@@ -20,16 +24,16 @@ This is the solution to some Org links problems:
 
 ```elisp
 (require 'org-links)
+;; opening for C-c C-o
+(add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
+(advice-add 'org-open-file :around #'org-links-org-open-file-advice)
+;; copying
 (global-set-key (kbd "C-c w") #'org-links-store-extended)
-(advice-add 'org-link-open-as-file :around #'org-links--org-link-open-as-file))
 ```
 
 ### Advanced configuration
 
 ```elisp
-(require 'ol)
-(global-set-key (kbd "C-c C-o") #'org-open-at-point-global) ; optional
-
 (defun org-links-store-link-fallback (arg)
   "Copy Org-mode link to kill ring and clipboard from any mode.
 Without a  prefix argument  ARG, copies a  link PATH::NUM  (current line
@@ -44,7 +48,7 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
            ;; - else
            (if (derived-mode-p 'image-dired-image-mode)
                (concat "[[file:" (buffer-file-name (buffer-base-buffer)) "]]")
-             ;; - else - programming
+             ;; - else - programming, text and fundamental
              (if (and (not arg)
                       (or (derived-mode-p 'prog-mode)
                           (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
@@ -60,27 +64,35 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
 (add-to-list 'load-path "/home/g/sources/emacs-org-links")
 (if (not (require 'org-links nil 'noerror))
     (global-set-key (kbd "C-c w") #'org-links-store-link-fallback)
-  ;; else - org-links have been loaded
-  (global-set-key (kbd "C-c w") #'org-links-store-extended)
-  ;; For support opening links in format file:PATH::NUM::line
-  (advice-add 'org-link-open-as-file :around #'org-links--org-link-open-as-file))
+
+  ;; org-links configuration
+  ;; opening
+  (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
+  (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
+  ;; copying
+  (global-set-key (kbd "C-c w") #'org-links-store-extended))
+
+(require 'ol)
+(global-set-key (kbd "C-c C-o") #'org-open-at-point-global) ; optional
+
 ```
 
 ### How Org links works?
 
 https://orgmode.org/guide/Hyperlinks.html
 
-Storing or copying: `org-store-link' store link to org-stored-links variable.
+Storing: `org-store-link' store link to org-stored-links variable  `org-stored-links', functions `org-insert-link' and `org-insert-link-global' put link to buffer.
 
-Inserting: `org-stored-links' and `org-insert-link-global' put link to buffer.
+Opening 1): `org-open-at-point' -> `org-link-open' ; org.el
+- for "files:" `org-link-open-as-file' -> `org-open-file' (handle "::23", cause troubles) -> `org-link-search'
+- for local links `org-link--search-radio-target' and `org-link-search' used
 
-Opening in Org: `org-open-at-point' -> `org-link-open' ; org.el
-
-Opening everywhere: `org-open-at-point-global' ; org.el
+Opening 2): `org-open-at-point-global' ; org.el
 - -> `org-link-open-from-string' -> `org-link-open' (element)
-- -> `org-link-open-as-file' -> `org-open-file' -> `org-link-search' for fuzzy
 
-Org config variables for links in ol.el:
+`org-link-search' (for curret buffer) call `org-execute-file-search-functions' or search link.
+
+Org configurable variables:
 - org-link-context-for-files - default t, store fuzzy text
 - org-link-search-must-match-exact-headline - if nil search fuzzy
 

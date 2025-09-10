@@ -7,7 +7,7 @@ And new formats of links:
 
 For ex. [[file:./notes/warehouse.el::23::(defun alina (pic))]]
 
-Also, provide configuration for using standard ol.el without requirement of this package.
+Also, provide configuration for using standard ol.el without requirement of this package. Copying links to clipboard kill ring.
 
 ## Why?
 

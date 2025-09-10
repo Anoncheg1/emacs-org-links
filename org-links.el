@@ -41,6 +41,11 @@
 ;; - [[PATH::NUM-NUM]]
 ;; - [[PATH::NUM]] creating
 
+;; Configuration for Copying links to clipboard kill ring.
+
+;; [[PATH::NUM::LINE]] - At opening we search for LINE first, if not
+;; found exactly one, we use NUM line number.
+
 ;; For opening links there is advice that extend standard
 ;; org-open-at-point-global and org-open-at-point function used to
 ;; follow link to support new additional format of link.
@@ -48,16 +53,11 @@
 ;; Org support opening links PATH::NUM with line number but don't
 ;; implement creation of them.
 
-;; Provided configuration for confirtable usage of Org links.
-;; Provided additional format of links PATH::NUM::LINE for programming modes.
-
-;; [[PATH::NUM::LINE]] - At opening we search for LINE first, if not
-;; found exactly one, we use NUM line number.
-
 ;; Configuration:
 ;; (require 'org-links)
-;; (global-set-key (kbd "C-c w") #'org-links-store-extended)
-;; (advice-add 'org-link-open-as-file :around #'org-links--org-link-open-as-file))
+;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
+;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
+;; (global-set-key (kbd "C-c w") #'org-links-store-extended))
 
 ;; You may advanced configuration in README.md file.
 

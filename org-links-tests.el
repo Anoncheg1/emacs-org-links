@@ -83,12 +83,13 @@
 
 (ert-deftest org-links-tests-store-link-fallback--image-mode ()
   (let ((kill-ring nil))
+    (with-org-link-config
     (with-temp-file-buffer "/bar/image.jpg"
       (lambda ()
         (set-major-mode 'image-dired-image-mode)
         (cl-letf (((symbol-function 'buffer-base-buffer) (lambda (&optional _buf) (current-buffer))))
           (org-links-store-link-fallback nil)
-          (should (equal (car kill-ring) "[[file:/bar/image.jpg]]")))))))
+          (should (equal (car kill-ring) "[[file:/bar/image.jpg]]"))))))))
 
 (ert-deftest org-links-tests-store-link-fallback--prog-mode-with-arg ()
   (let ((kill-ring nil)
@@ -157,7 +158,10 @@
        (advice-remove 'org-open-file #'org-links-org-open-file-advice))))
 ;;; - org-links-create-link
 (ert-deftest org-links-tests-create-link ()
-  (should (string-equal (org-links-create-link "file:.././string") "[[file:~/work/emacs-org-links/string]]")))
+  (if (file-exists-p "~/sources/") ; local
+      (should (string-equal (org-links-create-link "file:.././string") "[[file:~/sources/string]]"))
+    ;; else - melpaziod
+    (should (string-equal (org-links-create-link "file:.././string") "[[file:~/work/emacs-org-links/string]]"))))
 ;;; - org-links-org--unnormalize-string
 ;; Utility for printable test output:
 (defun org-links--print-fail (desc val expected)
@@ -341,7 +345,8 @@
            (setq kill-ring nil)
            (org-links-store-extended nil)
            (should (string-match-p
-                    "\\[\\[file:/mock/test.txt::1-4\\]\\]" (car kill-ring)))(set-buffer-modified-p nil))))
+                    "[[file:/mock/test.txt::1-4]]" (car kill-ring)))
+           (set-buffer-modified-p nil))))
           (kill-buffer buf))))
 
 (ert-deftest org-links-store-extended-prog-mode-test ()

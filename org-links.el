@@ -196,25 +196,29 @@ For usage with original Org `org-open-at-point-global' function."
      ((or (derived-mode-p 'prog-mode)
           (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
           (derived-mode-p 'fundamental-mode))
-      (setq link (substring-no-properties (org-store-link nil)))
-      (setq link (if arg
-                     ;; store in PATH::NUM::LINE format
-                     (org-links-create-link (concat (substring link 2 (- (length link) 2)) ; path
-                             "::" (number-to-string (line-number-at-pos))
-                             "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
-                   ;; else
-                   (org-links-create-link (concat (substring link 2 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)))))))
+      (setq link (org-store-link nil))
+      (when link
+        (setq link (substring-no-properties link))
+        (setq link (if arg
+                       ;; store in PATH::NUM::LINE format
+                       (org-links-create-link (concat (substring link 2 (- (length link) 2)) ; path
+                                                      "::" (number-to-string (line-number-at-pos))
+                                                      "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                     ;; else
+                     (org-links-create-link (concat (substring link 2 (- (length link) 2)) "::" (number-to-string (line-number-at-pos))))))))
      ;; - Org mode
      (t
-      (setq link (substring-no-properties (org-store-link nil)))
-      (setq link (if arg
-                     ;; store in PATH::NUM::LINE format
-                     (org-links-create-link (concat (substring link 2 (- (length link) 2))
-                             "::" (number-to-string (line-number-at-pos))
-                             "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
-                   ;; else
-                   (setq org-link-context-for-files t) ; local in let
-                   (substring-no-properties (org-store-link nil))))))
+      (setq link (org-store-link nil))
+      (when link
+        (setq link (substring-no-properties link))
+        (setq link (if arg
+                       ;; store in PATH::NUM::LINE format
+                       (org-links-create-link (concat (substring link 2 (- (length link) 2))
+                                                      "::" (number-to-string (line-number-at-pos))
+                                                      "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                     ;; else
+                     (setq org-link-context-for-files t) ; local in let
+                     (substring-no-properties (org-store-link nil)))))))
     (kill-new link)
     (message (concat link "\t- copied to clipboard"))))
 
@@ -248,41 +252,30 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
 ;;; - help functions: unnormalize link
 
 (defun org-links-org-link--normalize-string (string &optional context)
-  "Modified version of `org-link--normalize-string'.
+  "Compact spaces and trim leading to make link more compact.
+Modified version of `org-link--normalize-string'.
 Instead of much of removal we only compact spaces and remove leading.
 Instead of removing [1/3], [50%], leading ( and trailing ), spaces at
 the end of STRING, we just compress spaces in line and remove leading
 spaces from STRING.  CONTEXT ignored."
-  (setq context context) ;; noqa for Warning: Unused lexical argument ‘context’
-  (let ((string
-	 ;; (org-trim
-          (string-trim
-	  (replace-regexp-in-string
-	   (rx (one-or-more (any " \t")))
-	   " "
-	   ;; (replace-regexp-in-string
-	   ;;  ;; Statistics cookie regexp.
-	   ;;  (rx (seq "[" (0+ digit) (or "%" (seq "/" (0+ digit))) "]"))
-	   ;;  " "
-	   string) "[ \t\n\r]+" nil ))) ; trim only left
-    ;; (when context
-    ;;   (while (cond ((and (string-prefix-p "(" string)
-    ;;     		 (string-suffix-p ")" string))
-    ;;     	    (setq string (org-trim (substring string 1 -1))))
-    ;;     	   ((string-match "\\`[#*]+[ \t]*" string)
-    ;;     	    (setq string (substring string (match-end 0))))
-    ;;     	   (t nil))))
-    string))
+  (setq context context) ;; noqa: unused
+  (string-trim
+   (replace-regexp-in-string
+    (rx (one-or-more (any " \t")))
+    " "
+    string) "[ \t\n\r]+"))
 
 (defun org-links-org--unnormalize-string (string)
-  "Convert STRING to regex.
+  "Create regex matching string with arbitrary whitespace.
 Reverse of `org-links-org-link--normalize-string.
 Add spaces at begin of line and replace spaces with any number of spaces
 or tabs in the middle.
 To create proper regex, string should be first be processed with
 `regexp-quote'."
-  (concat "[ \t]*" (string-replace " " "[ \t]+" string)))
+  (concat "[ \t]*" (string-replace " " "[ \t]+" string) "[ \t]*"))
 
+
+;; small tests:
 
 (if (not (string-match (let ((string "    ;;     	    (setq string (org-trim (substring string 1 -1))))"))
                          (org-links-org-link--normalize-string string))
@@ -318,10 +311,8 @@ match otherwisde line numbers."
       (let ((buf-str (buffer-substring-no-properties (point-min) (point-max)))
             (start 0)
             (results1 '()))
-        ;; (print (list start (string-match search-string-regex buf-str start)))
         (while (and (< (length results1) n)
                     (string-match search-string-regex buf-str start))
-          ;; (print (list (< (length results1) n) (string-match search-string-regex buf-str start)))
           ;; convert pos to line number
           (push (if get-positions (match-beginning 0)
                   ;; else
@@ -340,7 +331,6 @@ match otherwisde line numbers."
             (let ((line (buffer-substring-no-properties
                          (line-beginning-position)
                          (line-end-position))))
-              ;; (print (list (string-full-match search-string-regex line) search-string-regex line))
               (when (and (not (string-empty-p line)) ; skip empty lines
                      (org-links-string-full-match search-string-regex line))
                 (push (if get-positions (line-beginning-position) ln) results2))
@@ -349,7 +339,7 @@ match otherwisde line numbers."
             (nreverse results2))))))
 
 (defun org-links--find-line (link-org-string)
-  "Return position that match LINK-ORG-STRING or nil."
+  "Return position that match LINK-ORG-STRING in buffer or nil."
   (let* ((link (concat "^" (org-links-org--unnormalize-string (regexp-quote link-org-string)) "$"))
          (re (org-links-find-first-two-exact-lines-in-buffer-optimized link)))
     (if (eq (length re) 1) ;; found exactly one

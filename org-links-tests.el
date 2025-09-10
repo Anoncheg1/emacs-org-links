@@ -44,7 +44,7 @@
 (require 'ert)
 (require 'org)
 (require 'org-links)
-
+(require 'image-dired)
 ;;; - Help functions
 (defun set-major-mode (mode)
   (funcall mode))
@@ -141,9 +141,23 @@
             (org-links-store-link-fallback nil)
             (should (string= (car kill-ring) "[[file:/org.org::]]")))(set-buffer-modified-p nil))
       (kill-buffer buf))))
+;;; - advices activation
+;; ;; opening
+;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
+;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
+;; ;; copying
+;; (global-set-key (kbd "C-c w") #'org-links-store-extended)
+(defmacro with-org-link-config (&rest body)
+  `(let ((org-execute-file-search-functions
+          (cons #'org-links-additional-formats
+                org-execute-file-search-functions)))
+     (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
+     (unwind-protect
+         ,@body
+       (advice-remove 'org-open-file #'org-links-org-open-file-advice))))
 ;;; - org-links-create-link
 (ert-deftest org-links-tests-create-link ()
-  (should (string-equal (org-links-create-link "file:.././string") "[[file:~/sources/string]]")))
+  (should (string-equal (org-links-create-link "file:.././string") "[[file:~/work/emacs-org-links/string]]")))
 ;;; - org-links-org--unnormalize-string
 ;; Utility for printable test output:
 (defun org-links--print-fail (desc val expected)
@@ -317,6 +331,7 @@
   (let ((buf (generate-new-buffer "*test9*")))
     (unwind-protect
         (with-current-buffer buf
+          (with-org-link-config
           (with-mocks
            (setq major-mode 'text-mode)
            (setq buffer-file-name "/mock/test.txt")
@@ -326,7 +341,7 @@
            (setq kill-ring nil)
            (org-links-store-extended nil)
            (should (string-match-p
-                    "\\[\\[file:/mock/test.txt::1-4\\]\\]" (car kill-ring)))(set-buffer-modified-p nil)))
+                    "\\[\\[file:/mock/test.txt::1-4\\]\\]" (car kill-ring)))(set-buffer-modified-p nil))))
           (kill-buffer buf))))
 
 (ert-deftest org-links-store-extended-prog-mode-test ()

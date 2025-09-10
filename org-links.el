@@ -96,7 +96,8 @@
 
 ;; Opening 1): `org-open-at-point'
 ;; -> `org-link-open' ; org.el
-;;   - for "files:" `org-link-open-as-file' -> `org-open-file' (handle "::23", cause troubles) -> `org-link-search'
+;;   - for "files:" `org-link-open-as-file' -> `org-open-file' (handle
+;;        "::23", cause troubles) -> `org-link-search'
 ;;   - for local links `org-link--search-radio-target' and `org-link-search' used
 
 ;; Opening 2): `org-open-at-point-global' ; org.el
@@ -198,8 +199,7 @@ For usage with original Org `org-open-at-point-global' function."
       (let ((path (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer))))))
         (setq link (concat (substring path 0 (- (length path) 2)) "::"
                 (number-to-string (line-number-at-pos (region-beginning))) "-" (number-to-string (line-number-at-pos (region-end)))
-                "]]"
-                ))))
+                "]]"))))
 
      ;; - PATH::NUM::LINE - for Programming modes and fundamental
      ;; store without fuzzy content and add line number."
@@ -420,8 +420,7 @@ LINK is string after :: or was just in [[]].
 
       (org-goto-line (string-to-number num1))
       (org-links-num-num-enshure-num2-visible num2)
-      t
-      ))
+      t))
    ;; NUM-NUM::LINE
    ((when-let* ((num1 (and (string-match org-links-num-num-line-regexp link)
                            (match-string 1 link)))

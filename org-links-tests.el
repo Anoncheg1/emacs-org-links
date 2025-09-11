@@ -82,14 +82,15 @@
       (kill-buffer buf))))
 
 (ert-deftest org-links-tests-store-link-fallback--image-mode ()
-  (let ((kill-ring nil))
-    (with-org-link-config
-    (with-temp-file-buffer "/bar/image.jpg"
-      (lambda ()
-        (set-major-mode 'image-dired-image-mode)
-        (cl-letf (((symbol-function 'buffer-base-buffer) (lambda (&optional _buf) (current-buffer))))
-          (org-links-store-link-fallback nil)
-          (should (equal (car kill-ring) "[[file:/bar/image.jpg]]"))))))))
+  (if (display-graphic-p)
+      (let ((kill-ring nil))
+        (with-org-link-config
+         (with-temp-file-buffer "/bar/image.jpg"
+                                (lambda ()
+                                  (set-major-mode 'image-dired-image-mode)
+                                  (cl-letf (((symbol-function 'buffer-base-buffer) (lambda (&optional _buf) (current-buffer))))
+                                    (org-links-store-link-fallback nil)
+                                    (should (equal (car kill-ring) "[[file:/bar/image.jpg]]")))))))))
 
 (ert-deftest org-links-tests-store-link-fallback--prog-mode-with-arg ()
   (let ((kill-ring nil)

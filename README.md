@@ -19,6 +19,29 @@ This is the solution to some Org links problems:
 - opening links with fuzzy search will match any first line with fuzzy substrings, not full line match, (org-link-search-must-match-exact-headline = nil required).
 
 ## How?
+### Installation - from MELPA
+```elisp
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(package-initialize)
+```
+Install via `M-x package-install RET org-links RET`
+
+### Installation - With `use-package`
+If your package is available on MELPA, add this to your init file:
+
+```elisp
+(use-package org-links
+  :ensure t)
+```
+
+If installing from a GitHub repo (not yet in MELPA), specify the source:
+```elisp
+(use-package async1
+  :straight (async1 :host github :repo "Anoncheg1/emacs-org-links"))
+;; Requires straight.el.
+```
+
 
 ### Simple configuration
 

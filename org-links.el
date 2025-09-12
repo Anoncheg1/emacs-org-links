@@ -175,6 +175,7 @@ DESCRIPTION not used."
 ;;     (error "Org-links"))
 
 ;;; - Copy to clipboard
+;;;###autoload
 (defun org-links-store-extended (arg)
   "Store link to `kill-ring' clipboard.
 ARG is universal argument.
@@ -406,6 +407,7 @@ Recenter screen and Two times check visibility."
         (recenter 1)))))
 
 ;;; - Open link - org-execute-file-search-functions +  advice
+;;;###autoload
 (defun org-links-additional-formats (link)
   "Local search for additional formats in current buffer.
 Called from `org-link-searchs'.
@@ -448,6 +450,7 @@ LINK is string after :: or was just in [[]].
         (org-goto-line (string-to-number num1)))
       t))))
 
+;;;###autoload
 (defun org-links-org-open-file-advice (orig-fun &rest args)
   "Support for additional formats.
 Argument ORIG-FUN is `org-open-file' that breaks at NUM-NUM,

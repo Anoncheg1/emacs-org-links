@@ -1,4 +1,4 @@
-;;; org-links.el --- Search line and fallback to number [[PATH::NUM::LINE]] -*- lexical-binding: t -*-
+;;; org-links.el --- Configuration and some new links: [[PATH::NUM::LINE]] -*- lexical-binding: t -*-
 
 ;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
 ;; Keywords: org, text, hypermedia, url
@@ -41,7 +41,7 @@
 ;; - [[PATH::NUM-NUM]]
 ;; - [[PATH::NUM]] creating
 
-;; Configuration for Copying links to clipboard kill ring.
+;; Copying links to clipboard kill ring.
 
 ;; [[PATH::NUM::LINE]] - At opening we search for LINE first, if not
 ;; found exactly one, we use NUM line number.

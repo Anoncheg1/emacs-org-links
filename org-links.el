@@ -41,7 +41,7 @@
 ;; - [[PATH::NUM-NUM]]
 ;; - [[PATH::NUM]] creating
 
-;; Copying links to clipboard kill ring.
+;; Copying links to clipboard kill ring. Warning at opening if two targets exist.
 
 ;; [[PATH::NUM::LINE]] - At opening we search for LINE first, if not
 ;; found exactly one, we use NUM line number.

@@ -456,10 +456,10 @@ LINK is string after :: or was just in [[]].
 Argument ORIG-FUN is `org-open-file' that breaks at NUM-NUM,
 NUM-NUM::LINE, NUM::LINE formats.
 Optional argument ARGS is `org-open-file' arguments."
-  (print args)
+  (print (list "org-links-org-open-file-advice" args))
   (seq-let (path in-emacs string search) args
     (setq string string) ;; noqa: unused
-    (if search
+    (if search ; part after ::
         (cond
          ;; NUM-NUM
          ((when-let* ((num1 (and (string-match org-links-num-num-regexp search)
@@ -489,9 +489,19 @@ Optional argument ARGS is `org-open-file' arguments."
               ;; else
               (org-goto-line (string-to-number num1)))
             t))
-         (t ;; else
-          (apply orig-fun args)))
-      ;; else
+         (t ;; else - classic Org format
+          ;; Addon to Org logic: signal if two targets exist
+          (apply orig-fun args)
+          (with-restriction (line-end-position) (point-max)
+            (save-excursion
+              (condition-case nil
+                  (with-restriction (line-end-position) (point-max)
+                    (let ((org-link-search-must-match-exact-headline t))
+                      (when (org-link-search search nil t)
+                        (message "Warning: Two targets exist for this link."))))
+                (error nil)
+                (user-error nil))))))
+      ;; else - no part after ::
       (apply orig-fun args))))
 
 

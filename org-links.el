@@ -57,7 +57,7 @@
 ;; (require 'org-links)
 ;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
 ;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
-;; (global-set-key (kbd "C-c w") #'org-links-store-extended))
+;; (global-set-key (kbd "C-c w") #'org-links-store-extended)
 
 ;; You may advanced configuration in README.md file.
 
@@ -89,6 +89,14 @@
 
 ;; ==== How Org links works: ====
 ;; https://orgmode.org/guide/Hyperlinks.html
+;; Classification according to `org-element-link-parser':
+;; - radio - any text to <<<target>>>
+;; - bracket - [[link]]
+;;   - file:
+;;   - coderef, custom-id, fuzzy
+;; - Plain link - type:...
+;; - Angular link <type:...>
+
 
 ;; Storing: `org-store-link' store link to org-stored-links variable
 ;;  `org-stored-links', functions `org-insert-link' and
@@ -108,6 +116,9 @@
 ;; Org configurable variables:
 ;; - org-link-context-for-files - default t, store fuzzy text
 ;; - org-link-search-must-match-exact-headline - if nil search fuzzy
+
+;; How links readed:
+;; org-open-at-point use cache, `org-open-at-point-global' uses org-element-link-parser
 
 ;; - Simple solution
 ;; Store without fuzzy only PATH:
@@ -136,6 +147,9 @@
 
 ;; `org-store-link'     and     `org-open-at-point'     works     with
 ;;   [[file:~/a.org::nname]]  and [[nname]]  -  look  for <<target>>  or #+NAME:
+;;
+;; Documentation used https://orgmode.org/manual/Adding-Hyperlink-Types.html
+;; But this works for links types defined as prefix: "man:".
 
 ;;; TODO:
 ;; - add advice for  org-element-link-parser and add own  link type to
@@ -385,6 +399,14 @@ match otherwisde line numbers."
 
 (defvar org-links-num-num-regexp "^\\([0-9]+\\)-\\([0-9]+\\)$"
   "Links ::NUM-NUM.")
+
+;; (defvar org-links-num-num-re (rx (seq "[["
+;; 	           ;; URI part: match group 1.
+;; 	           (group (+ digit)) "-" (group (+ digit))
+;; 		   ;; Description (optional): match group 2.
+;; 		   (opt "[" (group (+? anything)) "]")
+;; 		   "]")))
+
 (defvar org-links-num-num-line-regexp "^\\([0-9]+\\)-\\([0-9]+\\)::\\(.*\\)$"
   "Links ::NUM-NUM::LINE.")
 (defvar org-links-num-line-regexp "^\\([0-9]+\\)::\\(.+\\)$"
@@ -406,14 +428,15 @@ Recenter screen and Two times check visibility."
                                             (point))))
         (recenter 1)))))
 
-;;; - Open link - org-execute-file-search-functions +  advice
+;;; - Open link - for [[PATH::NUM-NUM]] - org-execute-file-search-functions +  advice
 ;;;###autoload
 (defun org-links-additional-formats (link)
   "Local search for additional formats in current buffer.
-Called from `org-link-searchs'.
+Called from `org-link-search'.
 LINK is string after :: or was just in [[]].
 `org-execute-file-search-in-bibtex' as example."
   ;; from `org-link-open-as-file'
+  (print "org-links-additional-formats")
   (cond
    ;; NUM-NUM
    ((when-let* ((num1 (and (string-match org-links-num-num-regexp link)
@@ -450,6 +473,9 @@ LINK is string after :: or was just in [[]].
         (org-goto-line (string-to-number num1)))
       t))))
 
+;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
+;; (remove-hook 'org-execute-file-search-functions #'org-links-additional-formats)
+;;; - Approach 1) org-open-file advice - based on fuzzy links. Fix probles caused by org-open-file.
 ;;;###autoload
 (defun org-links-org-open-file-advice (orig-fun &rest args)
   "Support for additional formats.
@@ -508,6 +534,141 @@ Optional argument ARGS is `org-open-file' arguments."
 ;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
 ;; (advice-remove 'org-open-file #'org-links-org-open-file-advice)
 
+;;; - Approach 2) Alternative implementation by advice to link parse for [[NUM-NUM]], NUM::LINK, etc
+;; (defun org-links--org-element-link-parser-advice (orig-fun &rest args)
+;;   "Advice to recognize NUM-NUM links.
+;; For `org-element-link-parser'."
+;;   (print "org-links--org-element-link-parser-advice")
+;;   (catch 'no-object
+;;     (let ((begin (point))
+;; 	  end contents-begin contents-end link-end post-blank path type format
+;; 	  raw-link search-option application
+;;           (explicit-type-p nil))
+;;       (cond
+;;        ;; Type 1: Text targeted from a radio target.
+;;        ((and org-target-link-regexp
+;; 	     (save-excursion (or (bolp) (backward-char))
+;;                              (if org-target-link-regexps
+;;                                  (org--re-list-looking-at org-target-link-regexps)
+;;                                (looking-at org-target-link-regexp))))
+;;         (setq type "radio")
+;;         (setq format 'plain)
+;;         (setq link-end (match-end 1))
+;;         (setq path (match-string-no-properties 1))
+;;         (setq contents-begin (match-beginning 1))
+;;         (setq contents-end (match-end 1)))
+;;        ;; Type 2: Standard link, i.e. [[https://orgmode.org][website]]
+;;        ((looking-at org-link-bracket-re)
+;;         (setq format 'bracket)
+;;         (setq contents-begin (match-beginning 2))
+;;         (setq contents-end (match-end 2))
+;;         (setq link-end (match-end 0))
+;;         ;; RAW-LINK is the original link.  Decode any encoding.
+;;         ;; Expand any abbreviation in it.
+;;         ;;
+;;         ;; Also treat any newline character and associated
+;;         ;; indentation as a single space character.  This is not
+;;         ;; compatible with RFC 3986, which requires ignoring
+;;         ;; them altogether.  However, doing so would require
+;;         ;; users to encode spaces on the fly when writing links
+;;         ;; (e.g., insert [[shell:ls%20*.org]] instead of
+;;         ;; [[shell:ls *.org]], which defeats Org's focus on
+;;         ;; simplicity.
+;;         (setq raw-link (org-link-expand-abbrev
+;; 		        (org-link-unescape
+;; 			 (replace-regexp-in-string
+;; 			  "[ \t]*\n[ \t]*" " "
+;; 			  (match-string-no-properties 1)))))
+;;         ;; Determine TYPE of link and set PATH accordingly.  According
+;;         ;; to RFC 3986, remove whitespaces from URI in external links.
+;;         ;; In internal ones, treat indentation as a single space.
+
+;;         ;; (print (list "raw-link" raw-link (string-match org-links-num-num-regexp raw-link))) ;; "414-2344"
+
+;;         (cond
+;; 	 ;; File type.
+;;          ((or (string-match org-links-num-num-regexp raw-link)
+;;               (string-match org-links-num-line-regexp raw-link)
+;;               (string-match org-links-num-num-line-regexp raw-link))
+;;           (setq type "num")
+;; 	  (setq path raw-link ))
+;;          ;;  (setq type "num-num")
+;; 	 ;;  (setq path raw-link ))
+;;          ;; ((string-match org-links-num-line-regexp raw-link)
+;;          ;;  (setq type "num-line")
+;; 	 ;;  (setq path raw-link ))
+;;          ;; ((string-match org-links-num-num-line-regexp raw-link)
+;;          ;;  (setq type "num-num-line")
+;; 	 ;;  (setq path raw-link ))
+;;          (t
+;;           ;; (print "throw1")
+;;           (throw 'no-object nil))))
+;;        (t
+;;         ;; (print "throw2")
+;;         (throw 'no-object nil)))
+
+;;       ;; In any case, deduce end point after trailing white space from
+;;       ;; LINK-END variable.
+;;       (save-excursion
+;;         (setq post-blank
+;; 	      (progn (goto-char link-end) (skip-chars-forward " \t")))
+;;         (setq end (point)))
+;;       ;; Special "file"-type link processing.  Extract opening
+;;       ;; application and search option, if any.  Also normalize URI.
+;;       (when (string-match "\\`file\\(?:\\+\\(.+\\)\\)?\\'" type)
+;;         (setq application (match-string-no-properties 1 type))
+;;         (setq type "file")
+;;         (when (string-match "::\\(.*\\)\\'" path)
+;; 	  (setq search-option (match-string-no-properties 1 path))
+;; 	  (setq path (replace-match "" nil nil path)))
+;;         (setq path (replace-regexp-in-string "\\`///*\\(.:\\)?/" "\\1/" path)))
+;;       ;; Translate link, if `org-link-translation-function' is set.
+;;       (let ((trans (and (functionp org-link-translation-function)
+;; 		        (funcall org-link-translation-function type path))))
+;;         (when trans
+;; 	  (setq type (car trans))
+;;           (setq explicit-type-p t)
+;; 	  (setq path (cdr trans))))
+
+;;       (org-element-create
+;;        'link
+;;        (list :type (org-element--get-cached-string type)
+;;              :type-explicit-p explicit-type-p
+;; 	     :path path
+;; 	     :format format
+;; 	     :raw-link (or raw-link path)
+;; 	     :application application
+;; 	     :search-option search-option
+;; 	     :begin begin
+;; 	     :end end
+;; 	     :contents-begin contents-begin
+;; 	     :contents-end contents-end
+;; 	     :post-blank post-blank
+;;              ))))
+;;   ;; (print "org-links--org-element-link-parser-advice call origin")
+;;   (apply orig-fun args))
+
+;; (defun org-links-follow (search _)
+;;   "Open a \"help\" type link.
+;; PATH is a symbol name, as a string."
+;;   (print (list "vvvbas" search))
+;;   (let ((orig-fun 'org-open-file)
+;;         (path "")
+;;         in-emacs)
+;;     (when-let* ((num1 (and (string-match org-links-num-num-regexp search)
+;; 	                   (match-string 1 search)))
+;; 	        (num2 (match-string 2 search)))
+;;       ;; (print (list "vvvbas" "num1" num1 "num2" num2))
+;;       (apply orig-fun (list path in-emacs (string-to-number num1)))
+;;       (org-links-num-num-enshure-num2-visible num2)
+;;       t)))
+
+;; (org-link-set-parameters "num" :follow #'org-links-follow)
+;; test:
+;; (org-link-open-from-string "[[414-453][s]]")
+;; [[414-2344][s]]
+;; [[file:org-links.el::644-646]]
+;; (advice-add 'org-element-link-parser :around #'org-links--org-element-link-parser-advice)
 ;;; provide
 (provide 'org-links)
 

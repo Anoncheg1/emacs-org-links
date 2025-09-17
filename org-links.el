@@ -153,22 +153,25 @@ For usage with original Org `org-open-at-point-global' function."
       (if (bound-and-true-p buffer-file-name)
           (progn
             (setq link (buffer-file-name (buffer-base-buffer)))
+            (print (list "hhs" link))
             ;; (org-store-link nil))
             ;; (setq link (substring-no-properties link))
             (setq link (if arg
                            ;; store in PATH::NUM::LINE format
                            (org-links-create-link (concat
+                                                   "file:"
                                                    link
                                                    ;; (substring link 2 (- (length link) 2)) ; path
                                                    "::" (number-to-string (line-number-at-pos))
                                                    "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
                          ;; else
                          (org-links-create-link (concat
+                                                 "file:"
                                                  link
                                                  ;; (substring link 2 (- (length link) 2))
-                                                 "::" (number-to-string (line-number-at-pos))))))))
+                                                 "::" (number-to-string (line-number-at-pos)))))))
       ;; else - *scratch* buffer
-      (setq link (org-links-create-link (org-links--create-simple arg))))
+      (setq link (org-links-create-link (org-links--create-simple arg)))))
      ;; - Org mode
      (t
       (if (bound-and-true-p buffer-file-name)
@@ -179,6 +182,7 @@ For usage with original Org `org-open-at-point-global' function."
             (setq link (if arg
                            ;; store in PATH::NUM::LINE format
                            (org-links-create-link (concat
+                                                   "file:"
                                                    link
                                                    ;; (substring link 2 (- (length link) 2))
                                                    "::" (number-to-string (line-number-at-pos))

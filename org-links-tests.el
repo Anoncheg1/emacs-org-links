@@ -375,7 +375,8 @@
           (setq kill-ring nil)
           (goto-char (point-min))
           (org-links-store-extended 1)
-          (should (string-match-p "\\[\\[file:/mock/code.el::1::myline\\]\\]" (car kill-ring)))(set-buffer-modified-p nil)))
+          (should (string-match-p "\\[\\[file:/mock/code.el::1::myline\\]\\]" (car kill-ring)))
+          (set-buffer-modified-p nil)))
       (kill-buffer buf))))
 
 (ert-deftest org-links-store-extended-org-mode-test ()

@@ -1,0 +1,70 @@
+* Terms and Org default behavior:
+- Org link: [[link][description]]
+- sads -> <<<sads>>> # radio-target
+- [[ads]] -> <<ads>> # target
+- "::*text" - fuzzy link to header
+- "::asd" - link to target or fuzzy search
+- "::234" - number of line supported only with "file:"
+
+Org links: ol.el store links to headers if it have one otherwise it
+  use fuzzy search if you use:
+(setq org-link-search-must-match-exact-headline nil)
+
+
+* ==== How Org links works: ====
+https://orgmode.org/guide/Hyperlinks.html
+Classification according to `org-element-link-parser':
+- radio - any text to <<<target>>>
+- bracket - [[link]]
+  - file:
+  - coderef, custom-id, fuzzy
+- Plain link - type:...
+- Angular link <type:...>
+
+
+Storing: `org-store-link' store link to org-stored-links variable
+  `org-stored-links', functions `org-insert-link' and
+  `org-insert-link-global' put link to buffer.
+Opening 1): `org-open-at-point'
+ -> `org-link-open' ; org.el
+   - for "files:" `org-link-open-as-file' -> `org-open-file' (handle
+        "::23", cause troubles) -> `org-link-search'
+   - for local links `org-link--search-radio-target' and `org-link-search' used
+
+ Opening 2): `org-open-at-point-global' ; org.el
+ -> `org-link-open-from-string' -> `org-link-open' (element)
+`org-link-search' (for curret buffer) call  `org-execute-file-search-functions' or search link.
+Org configurable variables:
+ - org-link-context-for-files - default t, store fuzzy text
+ - org-link-search-must-match-exact-headline - if nil search fuzzy
+How links readed:
+ org-open-at-point use cache, `org-open-at-point-global' uses org-element-link-parser
+
+- Simple solution
+Store without fuzzy only PATH:
+(require 'ol)
+- Store:
+(let ((org-link-context-for-files))
+   (kill-new (org-store-link nil)))
+- Open:
+(let ((org-link-search-must-match-exact-headline))
+   (org-open-at-point-global))
+
+Simple solution problems
+- links sotred without number
+- targets in Org mode: stored same as a lines
+- Opening links  with fuzzy search  will match any first  line with
+  fuzzy      substrings,       not      full       line      match,
+  (org-link-search-must-match-exact-headline = nil required).
+
+* ==== Name: as referece ====
+ `org-babel-find-named-block'  - for  source-code  block only,  uses
+    org-babel-src-block-regexp (try to replace with org-block-regexp)
+(let ((org-babel-src-block-regexp org-block-regexp))
+   (org-babel-find-named-block "asd"))
+
+`org-store-link'     and     `org-open-at-point'     works     with
+   [[file:~/a.org::nname]]  and [[nname]]  -  look  for <<target>>  or #+NAME:
+
+ Documentation used https://orgmode.org/manual/Adding-Hyperlink-Types.html
+ But this works for links types defined as prefix: "man:".

@@ -34,8 +34,11 @@
 
 ;;; Commentary:
 
-;; Provided function for copying link to kill ring with additional
-;; formats, useful for programming modes.
+;; *About*:
+
+;; This package  provide function for  copying link to kill  ring with
+;; additional formats, useful for programming modes.
+;; Add new link formats:
 ;; - [[PATH::NUM::LINE]]
 ;; - [[PATH::NUM-NUM::LINE]]
 ;; - [[PATH::NUM-NUM]]
@@ -46,14 +49,15 @@
 ;; [[PATH::NUM::LINE]] - At opening we search for LINE first, if not
 ;; found exactly one, we use NUM line number.
 
-;; For opening links there is advice that extend standard
-;; org-open-at-point-global and org-open-at-point function used to
-;; follow link to support new additional format of link.
-
 ;; Org support opening links PATH::NUM with line number but don't
-;; implement creation of them.
+;; implement creation of them. Implemeted here.
 
-;; Configuration:
+;; *Features provided*:
+;; - respect org-link-context-for-files, if not set store only number.
+;; - correctly store file in image-dired-thumbnail-mode
+;; - Add support for image-dired-thumbnail-mode and image-dired-image-mode
+
+;; *Configuration*:
 ;; (require 'org-links)
 ;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
 ;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
@@ -61,101 +65,17 @@
 
 ;; You may advanced configuration in README.md file.
 
-;; Terms and Org default behavior:
-;; - Org link: [[link][description]]
-;; - sads -> <<<sads>>> # radio-target
-;; - [[ads]] -> <<ads>> # target
-;; - "::*text" - fuzzy link to header
-;; - "::asd" - link to target or fuzzy search
-;; - "::234" - number of line supported only with "file:"
-;;
-;; Org links: ol.el store links to headers if it have one otherwise it
-;;   use fuzzy search if you use:
-;; (setq org-link-search-must-match-exact-headline nil)
-
-;; Features:
-;; - respect org-link-context-for-files, if not set store only number.
-;; - correctly store file in image-dired-thumbnail-mode
-;; - Add support for image-dired-thumbnail-mode and image-dired-image-mode
-
-;; How this works:
+;; *How this works*:
 ;; We provide new function `org-links-store-extended' that use
 ;;  standard ol.el function and we add additional format for
 ;;  programming modes.
 ;;
-;; We  add  advice  around   `org-link-open-as-file'  that  called  by
-;;  `org-open-at-point-global' and by `org-open-at-point' that bound to
-;;  C-c C-o by default in Org mode.
+;; For opening links we add hook to org-execute-file-search-functions
+;;  that called from `org-link-search' function, used by Org function
+;;  for oppening files: `org-open-at-point' (that bound to C-c C-o by
+;;  default in Org mode.)  and `org-open-at-point-global'.
 
-;; ==== How Org links works: ====
-;; https://orgmode.org/guide/Hyperlinks.html
-;; Classification according to `org-element-link-parser':
-;; - radio - any text to <<<target>>>
-;; - bracket - [[link]]
-;;   - file:
-;;   - coderef, custom-id, fuzzy
-;; - Plain link - type:...
-;; - Angular link <type:...>
-
-
-;; Storing: `org-store-link' store link to org-stored-links variable
-;;  `org-stored-links', functions `org-insert-link' and
-;;  `org-insert-link-global' put link to buffer.
-
-;; Opening 1): `org-open-at-point'
-;; -> `org-link-open' ; org.el
-;;   - for "files:" `org-link-open-as-file' -> `org-open-file' (handle
-;;        "::23", cause troubles) -> `org-link-search'
-;;   - for local links `org-link--search-radio-target' and `org-link-search' used
-
-;; Opening 2): `org-open-at-point-global' ; org.el
-;; -> `org-link-open-from-string' -> `org-link-open' (element)
-
-;; `org-link-search' (for curret buffer) call  `org-execute-file-search-functions' or search link.
-
-;; Org configurable variables:
-;; - org-link-context-for-files - default t, store fuzzy text
-;; - org-link-search-must-match-exact-headline - if nil search fuzzy
-
-;; How links readed:
-;; org-open-at-point use cache, `org-open-at-point-global' uses org-element-link-parser
-
-;; - Simple solution
-;; Store without fuzzy only PATH:
-;; (require 'ol)
-;; - Store:
-;; (let ((org-link-context-for-files))
-;;    (kill-new (org-store-link nil)))
-;; - Open:
-;; (let ((org-link-search-must-match-exact-headline))
-;;    (org-open-at-point-global))
-;;
-;; Simple solution problems
-;; - links sotred without number
-;; - targets in Org mode: stored same as a lines
-;; - Opening links  with fuzzy search  will match any first  line with
-;;   fuzzy      substrings,       not      full       line      match,
-;;   (org-link-search-must-match-exact-headline = nil required).
-
-;; ==== Name: as referece ====
-;; `org-babel-find-named-block'  - for  source-code  block only,  uses
-;;    org-babel-src-block-regexp (try to replace with org-block-regexp)
-
-;; (let ((org-babel-src-block-regexp org-block-regexp))
-;;   (org-babel-find-named-block "asd"))
-;;
-
-;; `org-store-link'     and     `org-open-at-point'     works     with
-;;   [[file:~/a.org::nname]]  and [[nname]]  -  look  for <<target>>  or #+NAME:
-;;
-;; Documentation used https://orgmode.org/manual/Adding-Hyperlink-Types.html
-;; But this works for links types defined as prefix: "man:".
-
-;;; TODO:
-;; - add advice for  org-element-link-parser and add own  link type to
-;;   simplify `org-link-open'
-
-;; DONATE MONEY, SPONSOR AUTHOR:
+;; *DONATE MONEY, SPONSOR AUTHOR*:
 ;; You can sponsor me directly with crypto currencies:
 ;; - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
 ;; - USDT (Tether) address: TVoXfYMkVYLnQZV3mGZ6GvmumuBfGsZzsN

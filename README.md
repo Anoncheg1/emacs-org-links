@@ -113,42 +113,11 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
                                               (kill-new url)
                                               )))))
 
-### How Org links works?
-
-https://orgmode.org/guide/Hyperlinks.html
-
-Storing: `org-store-link' store link to org-stored-links variable  `org-stored-links', functions `org-insert-link' and `org-insert-link-global' put link to buffer.
-
-Opening 1): `org-open-at-point' -> `org-link-open' ; org.el
-- for "files:" `org-link-open-as-file' -> `org-open-file' (handle "::23", cause troubles) -> `org-link-search'
-- for local links `org-link--search-radio-target' and `org-link-search' used
-
-Opening 2): `org-open-at-point-global' ; org.el
-- -> `org-link-open-from-string' -> `org-link-open' (element)
-
-`org-link-search' (for curret buffer) call `org-execute-file-search-functions' or search link.
-
-Org configurable variables:
-- org-link-context-for-files - default t, store fuzzy text
-- org-link-search-must-match-exact-headline - if nil search fuzzy
-
-Simple storing links to kill ring:
-
-```elisp
-(require 'ol)
-;; - Store:
-(let ((org-link-context-for-files))
-    (kill-new (org-store-link nil)))
-;; - Open:
-(let ((org-link-search-must-match-exact-headline))
-   (org-open-at-point-global))
-```
-
 ### How this package works
 
 Provided function for copying link to kill ring with additional format for programming mode.
 
-For opening links there is advice that extend standard org-open-at-point-global and org-open-at-point function used to follow link to support new additional format of link.
+For opening links we add hook to org-execute-file-search-functions that called from `org-link-search' function, used by Org function for oppening files: `org-open-at-point' (bound to C-c C-o by default in Org mode.) and `org-open-at-point-global'.
 
 ### Donate, sponsor author
 You can give me crypto money directly with crypto currencies:

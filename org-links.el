@@ -189,6 +189,14 @@ DESCRIPTION not used."
 ;;     (error "Org-links"))
 
 ;;; - Copy to clipboard
+(defun org-links--create-simple (arg)
+  (if (not arg)
+      ;; store in NUM::LINE format
+      (concat (number-to-string (line-number-at-pos))
+              "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+    ;; else NUM-NUM
+    (concat (number-to-string (line-number-at-pos)) "-" (number-to-string (line-number-at-pos)))))
+
 ;;;###autoload
 (defun org-links-store-extended (arg)
   "Store link to `kill-ring' clipboard.
@@ -221,29 +229,46 @@ For usage with original Org `org-open-at-point-global' function."
      ((or (derived-mode-p 'prog-mode)
           (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
           (derived-mode-p 'fundamental-mode))
-      (setq link (org-store-link nil))
-      (when link
-        (setq link (substring-no-properties link))
-        (setq link (if arg
-                       ;; store in PATH::NUM::LINE format
-                       (org-links-create-link (concat (substring link 2 (- (length link) 2)) ; path
-                                                      "::" (number-to-string (line-number-at-pos))
-                                                      "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
-                     ;; else
-                     (org-links-create-link (concat (substring link 2 (- (length link) 2)) "::" (number-to-string (line-number-at-pos))))))))
+
+      (if (bound-and-true-p buffer-file-name)
+          (progn
+            (setq link (buffer-file-name (buffer-base-buffer)))
+            ;; (org-store-link nil))
+            ;; (setq link (substring-no-properties link))
+            (setq link (if arg
+                           ;; store in PATH::NUM::LINE format
+                           (org-links-create-link (concat
+                                                   link
+                                                   ;; (substring link 2 (- (length link) 2)) ; path
+                                                   "::" (number-to-string (line-number-at-pos))
+                                                   "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                         ;; else
+                         (org-links-create-link (concat
+                                                 link
+                                                 ;; (substring link 2 (- (length link) 2))
+                                                 "::" (number-to-string (line-number-at-pos))))))))
+      ;; else - *scratch* buffer
+      (setq link (org-links-create-link (org-links--create-simple arg))))
      ;; - Org mode
      (t
-      (setq link (org-store-link nil))
-      (when link
-        (setq link (substring-no-properties link))
-        (setq link (if arg
-                       ;; store in PATH::NUM::LINE format
-                       (org-links-create-link (concat (substring link 2 (- (length link) 2))
-                                                      "::" (number-to-string (line-number-at-pos))
-                                                      "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
-                     ;; else
-                     (setq org-link-context-for-files t) ; local in let
-                     (substring-no-properties (org-store-link nil)))))))
+      (if (bound-and-true-p buffer-file-name)
+          (progn
+            (setq link (buffer-file-name (buffer-base-buffer)))
+            ;; (org-store-link nil))
+            ;; (setq link (substring-no-properties link))
+            (setq link (if arg
+                           ;; store in PATH::NUM::LINE format
+                           (org-links-create-link (concat
+                                                   link
+                                                   ;; (substring link 2 (- (length link) 2))
+                                                   "::" (number-to-string (line-number-at-pos))
+                                                   "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                         ;; else
+                         (setq org-link-context-for-files t) ; local in let
+                         (substring-no-properties (org-store-link nil)))))
+        ;; else - *scratch* buffer
+        (setq link (org-links-create-link (org-links--create-simple arg)))
+        )))
     (kill-new link)
     (message (concat link "\t- copied to clipboard"))))
 

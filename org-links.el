@@ -142,7 +142,8 @@ For usage with original Org `org-open-at-point-global' function."
       (let ((path (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer))))))
         (setq link (concat (substring path 0 (- (length path) 2)) "::"
                 (number-to-string (line-number-at-pos (region-beginning))) "-" (number-to-string (line-number-at-pos (region-end)))
-                "]]"))))
+                "]]")))
+      (deactivate-mark))
 
      ;; - PATH::NUM::LINE - for Programming modes and fundamental
      ;; store without fuzzy content and add line number."

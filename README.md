@@ -101,6 +101,7 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
 (global-set-key (kbd "C-c C-o") #'org-open-at-point-global) ; optional
 
 ```
+
 ### Copy link to ring instead of opening
 ```elisp
 (add-hook 'org-mode-hook (lambda ()
@@ -112,6 +113,7 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
                                               (setq-local url (concat "http:" url arg))
                                               (kill-new url)
                                               )))))
+```
 
 ### How this package works
 

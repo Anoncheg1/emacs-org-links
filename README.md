@@ -45,7 +45,7 @@ If installing from a GitHub repo (not yet in MELPA), specify the source:
 ```
 
 
-### Simple configuration
+## Simple configuration
 
 ```elisp
 (require 'org-links)
@@ -56,7 +56,7 @@ If installing from a GitHub repo (not yet in MELPA), specify the source:
 (global-set-key (kbd "C-c w") #'org-links-store-extended)
 ```
 
-### Advanced configuration
+## Advanced configuration
 
 ```elisp
 (defun org-links-store-link-fallback (arg)
@@ -115,13 +115,13 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
                                               )))))
 ```
 
-### How this package works
+## How this package works
 
 Provided function for copying link to kill ring with additional format for programming mode.
 
 For opening links we add hook to org-execute-file-search-functions that called from `org-link-search' function, used by Org function for oppening files: `org-open-at-point' (bound to C-c C-o by default in Org mode.) and `org-open-at-point-global'.
 
-### Donate, sponsor author
+## Donate, sponsor author
 You can give me crypto money directly with crypto currencies:
 - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
 - USDT (Tether) address: TVoXfYMkVYLnQZV3mGZ6GvmumuBfGsZzsN

@@ -144,17 +144,16 @@ For usage with original Org `org-open-at-point-global' function."
      ((use-region-p)
       (let ((path (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer))))))
         (setq link (concat (substring path 0 (- (length path) 2)) "::"
-                (number-to-string (line-number-at-pos (region-beginning))) "-" (number-to-string (line-number-at-pos (region-end)))
-                (when arg
-                  (save-excursion
-                    (let ((rend (region-end)))
-                    (concat "::" (org-links-org-link--normalize-string
-                                  (save-excursion
-                                    (goto-char (region-beginning))
-                                    (buffer-substring-no-properties
-                                     (line-beginning-position)
-                                     (line-end-position))))))))
-                "]]")))
+                           (number-to-string (line-number-at-pos (region-beginning))) "-" (number-to-string (line-number-at-pos (region-end)))
+                           (when arg
+                             (save-excursion
+                               (concat "::" (org-links-org-link--normalize-string
+                                             (save-excursion
+                                               (goto-char (region-beginning))
+                                               (buffer-substring-no-properties
+                                                (line-beginning-position)
+                                                (line-end-position)))))))
+                           "]]")))
       (deactivate-mark))
 
      ;; - PATH::NUM::LINE - for Programming modes and fundamental

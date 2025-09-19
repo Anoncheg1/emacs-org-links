@@ -10,10 +10,7 @@ Org links: ol.el store links to headers if it have one otherwise it
   use fuzzy search if you use:
 (setq org-link-search-must-match-exact-headline nil)
 
-
-* ==== How Org links works: ====
-https://orgmode.org/guide/Hyperlinks.html
-Classification according to `org-element-link-parser':
+* Types of Org link
 - radio - any text to <<<target>>>
 - bracket - [[link]]
   - file:
@@ -21,6 +18,11 @@ Classification according to `org-element-link-parser':
 - Plain link - type:...
 - Angular link <type:...>
 
+Classification according to `org-element-link-parser':
+
+
+* ==== How Org links works: ====
+https://orgmode.org/guide/Hyperlinks.html
 
 Storing: `org-store-link' store link to org-stored-links variable
   `org-stored-links', functions `org-insert-link' and

@@ -5,8 +5,9 @@
 ;; URL: https://github.com/Anoncheg1/emacs-org-links
 ;; Version: 0.1
 ;; Created: 30 Aug 2025
-;; Package-Requires: ((emacs "27.1") (compat "30.1"))
+;; Package-Requires: ((emacs "27.1"))
 ;; > (Emacs 26+) for negative regex
+;; (compat "30.1")
 ;; "27.1" for ol.el
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; Copyright (c) 2025 github.com/Anoncheg1,codeberg.org/Anoncheg
@@ -112,12 +113,15 @@ DESCRIPTION not used."
 
 ;;; - Copy to clipboard
 (defun org-links--create-simple (arg)
-  (if (not arg)
-      ;; store in NUM::LINE format
-      (concat (number-to-string (line-number-at-pos))
-              "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
-    ;; else NUM-NUM
-    (concat (number-to-string (line-number-at-pos)) "-" (number-to-string (line-number-at-pos)))))
+  "Link builder for Fundamental mode.
+ARG is universal argument, if non-nil"
+  (if arg
+      ;; else - just LINE - will work if `org-link-search-must-match-exact-headline' is nil
+      (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+      ;; (concat (number-to-string (line-number-at-pos)) "-" (number-to-string (line-number-at-pos)))
+    ;; store in NUM::LINE format
+    (concat (number-to-string (line-number-at-pos))
+            "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position))))))
 
 ;;;###autoload
 (defun org-links-store-extended (arg)
@@ -203,8 +207,7 @@ For usage with original Org `org-open-at-point-global' function."
                          (setq org-link-context-for-files t) ; local in let
                          (substring-no-properties (org-store-link nil)))))
         ;; else - *scratch* buffer
-        (setq link (org-links-create-link (org-links--create-simple arg)))
-        )))
+        (setq link (org-links-create-link (org-links--create-simple arg))))))
     (kill-new link)
     (message (concat link "\t- copied to clipboard"))))
 
@@ -425,8 +428,7 @@ LINK is string after :: or was just in [[]].
         (org-goto-line num1)
         (when num2
           (org-links-num-num-enshure-num2-visible num2))
-        t
-        )))
+        t)))
 
 
 ;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)

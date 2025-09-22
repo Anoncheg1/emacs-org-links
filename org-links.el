@@ -262,7 +262,7 @@ Add spaces at begin of line and replace spaces with any number of spaces
 or tabs in the middle.
 To create proper regex, string should be first be processed with
 `regexp-quote'."
-  (concat "[ \t]*" (string-replace " " "[ \t]+" string) "[ \t]*"))
+  (concat "[ \t]*" (replace-regexp-in-string " " "[ \t]+" string) "[ \t]*"))
 
 
 ;; small tests:
@@ -483,13 +483,15 @@ Optional argument ARGS is `org-open-file' arguments."
          (t ;; else - classic Org format
           ;; Addon to Org logic: signal if two targets exist
           (apply orig-fun args)
-          (with-restriction (line-end-position) (point-max)
-            (save-excursion
+          (save-excursion
+	    (save-restriction
+          ;; (with-restriction (line-end-position) (point-max)
+          ;;   (save-excursion
               (condition-case nil
-                  (with-restriction (line-end-position) (point-max)
+                  ;; (with-restriction (line-end-position) (point-max)
                     (let ((org-link-search-must-match-exact-headline t))
                       (when (org-link-search search nil t)
-                        (message "Warning: Two targets exist for this link."))))
+                        (message "Warning: Two targets exist for this link.")))
                 (error nil)
                 (user-error nil))))))
       ;; else - no part after ::

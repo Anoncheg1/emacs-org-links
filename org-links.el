@@ -109,14 +109,14 @@ Argument STRING is a org link of file: type.
 DESCRIPTION not used."
   (setq description description) ;; noqa: unused
   (with-temp-buffer
-    (org-insert-link nil string nil)
+    (org-insert-link nil string description)
     (buffer-substring-no-properties (point-min) (point-max))))
 
 ;; (if (not (string-equal (org-links-create-link "file:.././string") "[[file:~/sources/string]]"))
 ;;     (error "Org-links"))
 
 ;;; - Copy to clipboard
-(defun org-links--create-simple (arg)
+(defun org-links--create-simple-at-point (arg)
   "Link builder for Fundamental mode.
 ARG is universal argument, if non-nil"
   (if arg
@@ -127,6 +127,22 @@ ARG is universal argument, if non-nil"
     (concat (number-to-string (line-number-at-pos))
             "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position))))))
 
+(defun org-links--create-org-default-at-point ()
+  "Wrap `org-store-link' to extract main parts of link."
+  (let ((link-string (substring-no-properties (org-store-link nil))))
+    ;; - [[ ]]  links
+    (if (string-match org-link-bracket-re link-string) ; 1: file::search-option 2: decription
+        (let ((path (match-string 1 link-string))
+              (desc (match-string 2 link-string)))
+
+          (print (list path desc (org-links-create-link path desc)))
+         (org-links-create-link path desc))
+         ;; else - other types
+         (org-links-create-link link-string))))
+
+;; (let* (
+;; 	 (file-name (if (not option) path
+;; 		      (substring path 0 (match-beginning 0)))))
 ;;;###autoload
 (defun org-links-store-extended (arg)
   "Store link to `kill-ring' clipboard.
@@ -143,9 +159,9 @@ For usage with original Org `org-open-at-point-global' function."
                (concat "file:" (buffer-file-name (buffer-base-buffer))))
               ;; - Buffer menu
               ((derived-mode-p 'Buffer-menu-mode)
-               (concat "file:" (buffer-file-name (Buffer-menu-buffer t))))
-
-              (Buffer-menu-buffer t)
+               (concat "file:" (or (buffer-file-name (Buffer-menu-buffer t))
+                                   (with-current-buffer (Buffer-menu-buffer t)
+                                     default-directory))))
 
               ;; - NUM-NUM
               ((use-region-p)
@@ -185,7 +201,7 @@ For usage with original Org `org-open-at-point-global' function."
                                              ;; (substring link 2 (- (length link) 2))
                                              "::" (number-to-string (line-number-at-pos)))))
                  ;; else - *scratch* buffer
-                 (setq link (org-links-create-link (org-links--create-simple arg)))))
+                 (setq link (org-links-create-link (org-links--create-simple-at-point arg)))))
               ;; - PATH::NUM::LINE -  all modes
               (t
                (if (bound-and-true-p buffer-file-name)
@@ -197,9 +213,10 @@ For usage with original Org `org-open-at-point-global' function."
                                                "::" (number-to-string (line-number-at-pos))
                                                "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
                      ;; else - default
-                     (org-links-create-link (replace-regexp-in-string "\\\\" "" (substring (substring-no-properties (org-store-link nil)) 2 -2))))
+                     (org-links--create-org-default-at-point))
+
                  ;; else - *scratch* buffer
-                 (setq link (org-links-create-link (org-links--create-simple arg))))))))
+                 (setq link (org-links-create-link (org-links--create-simple-at-point arg))))))))
     (kill-new link)
     (message (concat link "\t- copied to clipboard"))))
 

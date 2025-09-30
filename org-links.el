@@ -1,4 +1,4 @@
-;;; org-links.el --- Copy link with numer of current line in all modes. -*- lexical-binding: t -*-
+;;; org-links.el --- Copy link with numer of current line in all modes -*- lexical-binding: t -*-
 
 ;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
 ;; Keywords: org, text, hypermedia, url
@@ -201,7 +201,7 @@ For usage with original Org `org-open-at-point-global' function."
                                              ;; (substring link 2 (- (length link) 2))
                                              "::" (number-to-string (line-number-at-pos)))))
                  ;; else - *scratch* buffer
-                 (setq link (org-links-create-link (org-links--create-simple-at-point arg)))))
+                 (org-links-create-link (org-links--create-simple-at-point arg))))
               ;; - PATH::NUM::LINE -  all modes
               (t
                (if (bound-and-true-p buffer-file-name)
@@ -216,7 +216,7 @@ For usage with original Org `org-open-at-point-global' function."
                      (org-links--create-org-default-at-point))
 
                  ;; else - *scratch* buffer
-                 (setq link (org-links-create-link (org-links--create-simple-at-point arg))))))))
+                 (org-links-create-link (org-links--create-simple-at-point arg)))))))
     (kill-new link)
     (message (concat link "\t- copied to clipboard"))))
 

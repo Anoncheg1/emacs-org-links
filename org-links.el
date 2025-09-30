@@ -1,4 +1,4 @@
-;;; org-links.el --- Configuration and some new links: [[PATH::NUM::LINE]] -*- lexical-binding: t -*-
+;;; org-links.el --- Copy link with numer of current line in all modes. -*- lexical-binding: t -*-
 
 ;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
 ;; Keywords: org, text, hypermedia, url
@@ -36,16 +36,19 @@
 ;;; Commentary:
 
 ;; *About*:
-
-;; This package  provide function for  copying link to kill  ring with
-;; additional formats, useful for programming modes.
-;; Add new link formats:
+;; 1) add function for copying link to kill ring clipboard, faster
+;; search for small files.
+;; 2) extend links with new types of more robust links, especially
+;; useful for creating links to files with programming code.
+;; 3) add warning at opening link if two targets was found for classic
+;; old Org link.
+;;
+;;
+;; Additional link formats:
 ;; - [[PATH::NUM::LINE]]
 ;; - [[PATH::NUM-NUM::LINE]]
 ;; - [[PATH::NUM-NUM]]
 ;; - [[PATH::NUM]] creating
-
-;; Copying links to clipboard kill ring. Warning at opening if two targets exist.
 
 ;; [[PATH::NUM::LINE]] - At opening we search for LINE first, if not
 ;; found exactly one, we use NUM line number.
@@ -78,10 +81,11 @@
 ;;  for oppening files: `org-open-at-point' (that bound to C-c C-o by
 ;;  default in Org mode.)  and `org-open-at-point-global'.
 
-;; *DONATE MONEY, SPONSOR AUTHOR*:
-;; You can sponsor me directly with crypto currencies:
+;; *DONATE MONEY*:
+;; You can sponsor author directly with crypto currencies:
 ;; - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
 ;; - USDT (Tether) address: TVoXfYMkVYLnQZV3mGZ6GvmumuBfGsZzsN
+;; - TON (Telegram) address: UQC8rjJFCHQkfdp7KmCkTZCb5dGzLFYe2TzsiZpfsnyTFt9D
 ;;
 ;;; Code:
 ;;; - Code
@@ -130,84 +134,72 @@ ARG is universal argument.
 Count lines from 1 like `line-number-at-pos' function does.
 For usage with original Org `org-open-at-point-global' function."
   (interactive "P\n")
-  (let ((org-link-context-for-files nil)
-        link)
-    (cond
-     ;; - Images mode 1
-     ((derived-mode-p (intern "image-dired-thumbnail-mode"))
-      (setq link
-            ;; (org-links-create-link
-                  (concat "file:" (funcall (intern "image-dired-original-file-name")))))
-     ;; - Images mode 2
-     ((derived-mode-p (intern "image-dired-image-mode"))
-      (setq link
-            ;; (org-links-create-link
-             (concat "file:" (buffer-file-name (buffer-base-buffer)))))
+  (let ((link (cond
+              ;; - Images mode 1
+              ((derived-mode-p (intern "image-dired-thumbnail-mode"))
+               (concat "file:" (funcall (intern "image-dired-original-file-name"))))
+              ;; - Images mode 2
+              ((derived-mode-p (intern "image-dired-image-mode"))
+               (concat "file:" (buffer-file-name (buffer-base-buffer))))
+              ;; - Buffer menu
+              ((derived-mode-p 'Buffer-menu-mode)
+               (concat "file:" (buffer-file-name (Buffer-menu-buffer t))))
 
-     ;; - NUM-NUM
-     ((use-region-p)
-      (let ((path (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer))))))
-        (setq link (concat (substring path 0 (- (length path) 2)) "::"
-                           (number-to-string (line-number-at-pos (region-beginning))) "-" (number-to-string (line-number-at-pos (region-end)))
-                           (when arg
-                             (save-excursion
-                               (concat "::" (org-links-org-link--normalize-string
-                                             (save-excursion
-                                               (goto-char (region-beginning))
-                                               (buffer-substring-no-properties
-                                                (line-beginning-position)
-                                                (line-end-position)))))))
-                           "]]")))
-      (deactivate-mark))
+              (Buffer-menu-buffer t)
 
-     ;; - PATH::NUM::LINE - for Programming modes and fundamental
-     ;; store without fuzzy content and add line number."
-     ((or (derived-mode-p 'prog-mode)
-          (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
-          (derived-mode-p 'fundamental-mode))
+              ;; - NUM-NUM
+              ((use-region-p)
+               (prog1 (let ((path (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer))))))
+                        (concat (substring path 0 (- (length path) 2)) "::"
+                                (number-to-string (line-number-at-pos (region-beginning))) "-" (number-to-string (line-number-at-pos (region-end)))
+                                (when arg
+                                  (save-excursion
+                                    (concat "::" (org-links-org-link--normalize-string
+                                                  (save-excursion
+                                                    (goto-char (region-beginning))
+                                                    (buffer-substring-no-properties
+                                                     (line-beginning-position)
+                                                     (line-end-position)))))))
+                                "]]"))
+                 (deactivate-mark)))
 
-      (if (bound-and-true-p buffer-file-name)
-          (progn
-            (setq link (buffer-file-name (buffer-base-buffer)))
-            (print (list "hhs" link))
-            ;; (org-store-link nil))
-            ;; (setq link (substring-no-properties link))
-            (setq link (if arg
-                           ;; store in PATH::NUM::LINE format
-                           (org-links-create-link (concat
-                                                   "file:"
-                                                   link
-                                                   ;; (substring link 2 (- (length link) 2)) ; path
-                                                   "::" (number-to-string (line-number-at-pos))
-                                                   "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
-                         ;; else
-                         (org-links-create-link (concat
-                                                 "file:"
-                                                 link
-                                                 ;; (substring link 2 (- (length link) 2))
-                                                 "::" (number-to-string (line-number-at-pos)))))))
-      ;; else - *scratch* buffer
-      (setq link (org-links-create-link (org-links--create-simple arg)))))
-     ;; - Org mode
-     (t
-      (if (bound-and-true-p buffer-file-name)
-          (progn
-            (setq link (buffer-file-name (buffer-base-buffer)))
-            ;; (org-store-link nil))
-            ;; (setq link (substring-no-properties link))
-            (setq link (if arg
-                           ;; store in PATH::NUM::LINE format
-                           (org-links-create-link (concat
-                                                   "file:"
-                                                   link
-                                                   ;; (substring link 2 (- (length link) 2))
-                                                   "::" (number-to-string (line-number-at-pos))
-                                                   "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
-                         ;; else
-                         (setq org-link-context-for-files t) ; local in let
-                         (substring-no-properties (org-store-link nil)))))
-        ;; else - *scratch* buffer
-        (setq link (org-links-create-link (org-links--create-simple arg))))))
+              ;; - PATH::NUM::LINE - for Programming modes and fundamental
+              ;; store without fuzzy content and add line number."
+              ((or (derived-mode-p 'prog-mode)
+                   (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
+                   (derived-mode-p 'fundamental-mode))
+
+               (if (bound-and-true-p buffer-file-name)
+                   (if arg
+                       ;; store in PATH::NUM::LINE format
+                       (org-links-create-link (concat
+                                               "file:"
+                                               (buffer-file-name (buffer-base-buffer))
+                                               ;; (substring link 2 (- (length link) 2)) ; path
+                                               "::" (number-to-string (line-number-at-pos))
+                                               "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                     ;; else
+                     (org-links-create-link (concat
+                                             "file:"
+                                             (buffer-file-name (buffer-base-buffer))
+                                             ;; (substring link 2 (- (length link) 2))
+                                             "::" (number-to-string (line-number-at-pos)))))
+                 ;; else - *scratch* buffer
+                 (setq link (org-links-create-link (org-links--create-simple arg)))))
+              ;; - PATH::NUM::LINE -  all modes
+              (t
+               (if (bound-and-true-p buffer-file-name)
+                   (if arg
+                       (org-links-create-link (concat
+                                               "file:"
+                                               (buffer-file-name (buffer-base-buffer))
+                                               ;; (substring link 2 (- (length link) 2))
+                                               "::" (number-to-string (line-number-at-pos))
+                                               "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                     ;; else - default
+                     (org-links-create-link (replace-regexp-in-string "\\\\" "" (substring (substring-no-properties (org-store-link nil)) 2 -2))))
+                 ;; else - *scratch* buffer
+                 (setq link (org-links-create-link (org-links--create-simple arg))))))))
     (kill-new link)
     (message (concat link "\t- copied to clipboard"))))
 
@@ -231,7 +223,8 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
                       (or (derived-mode-p 'prog-mode)
                           (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
                           (derived-mode-p 'fundamental-mode)))
-                 (let* ((org-link-context-for-files)
+                 (let* (
+                        ;; (org-link-context-for-files)
                         (link (substring-no-properties (org-store-link nil))))
                    (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))
                ;; else - prog with argument or Org - with line for fuzzy search

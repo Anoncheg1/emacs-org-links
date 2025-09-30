@@ -1,15 +1,16 @@
 # emacs-org-links
-And new formats of links:
-- [[PATH::NUM::LINE]] - At opening we search for LINE first, if not found exactly one, we use NUM line number.
-- [[PATH::NUM-NUM::LINE]]
-- [[PATH::NUM-NUM]]
-- [[PATH::NUM]] creating
+Provide function to copy links to clipboard kill ring with additional number of line, this allow to search link in two steps: 1) by LINE 2) by NUM.
 
-For ex. [[file:./notes/warehouse.el::23::(defun alina (pic))]]
+You just copy link with *C-c C-w* and insert with *C-y* in any mode.
 
-Also, provide:
-- configuration for using standard ol.el without requirement of this package. Copying links to clipboard kill ring.
-- Warning if two Org targets exist in one file.
+- `[[PATH::NUM::LINE]]` - At opening we search for LINE first, if not found exactly one, we use NUM line number.
+- `[[PATH::NUM-NUM::LINE]]`
+- `[[PATH::NUM-NUM]]`
+- `[[PATH::NUM]]` creating
+
+For ex. `[[file:./notes/warehouse.el::23::(defun alina (pic))]]`
+
+Also, provide warning if two Org targets exist in one file.
 
 ## Why?
 
@@ -99,7 +100,9 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
 
 (require 'ol)
 (global-set-key (kbd "C-c C-o") #'org-open-at-point-global) ; optional
-
+;; recommended:
+(setopt org-link-file-path-type 'absolute)
+(setopt org-link-search-must-match-exact-headline nil)
 ```
 
 ### Copy link to ring instead of opening
@@ -122,6 +125,7 @@ Provided function for copying link to kill ring with additional format for progr
 For opening links we add hook to org-execute-file-search-functions that called from `org-link-search' function, used by Org function for oppening files: `org-open-at-point' (bound to C-c C-o by default in Org mode.) and `org-open-at-point-global'.
 
 ## Donate, sponsor author
-You can give me crypto money directly with crypto currencies:
+You can sponsor author crypto money directly with crypto currencies:
 - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
 - USDT (Tether) address: TVoXfYMkVYLnQZV3mGZ6GvmumuBfGsZzsN
+- TON (Telegram) address: UQC8rjJFCHQkfdp7KmCkTZCb5dGzLFYe2TzsiZpfsnyTFt9D

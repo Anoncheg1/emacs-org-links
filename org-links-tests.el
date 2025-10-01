@@ -58,20 +58,20 @@
 (defun with-temp-file-buffer (filename thunk)
   "Create temp buffer visiting FILENAME, call THUNK, then kill."
   (with-temp-buffer
-           (set-visited-file-name filename t t)
-           (set-buffer-modified-p nil)
-           (funcall thunk)))
+    (set-visited-file-name filename t t)
+    (set-buffer-modified-p nil)
+    (funcall thunk)))
 
 ;;; - org-links-store-link-fallback
 ;; Helper usage already defined above
 (ert-deftest org-links-tests-store-link-fallback--thumbnail-mode ()
   (with-temp-buffer
-  (let ((kill-ring nil))
-          (set-major-mode 'image-dired-thumbnail-mode)
-          (cl-letf (((symbol-function 'image-dired-original-file-name)
-                     (lambda () "foo.png")))
-            (org-links-store-link-fallback nil)
-            (should (equal (car kill-ring) "[[file:foo.png]]"))))))
+    (let ((kill-ring nil))
+      (set-major-mode 'image-dired-thumbnail-mode)
+      (cl-letf (((symbol-function 'image-dired-original-file-name)
+                 (lambda () "foo.png")))
+        (org-links-store-link-fallback nil)
+        (should (equal (car kill-ring) "[[file:foo.png]]"))))))
 
 (ert-deftest org-links-tests-store-link-fallback--image-mode ()
   (if (display-graphic-p)
@@ -87,42 +87,42 @@
 (ert-deftest org-links-tests-store-link-fallback--prog-mode-with-arg ()
   (with-temp-buffer
     (let ((kill-ring nil))
-          (set-major-mode 'prog-mode)
-          (goto-char (point-max))
-          (cl-letf (((symbol-function 'org-store-link)
-                     (lambda (&optional _arg)
-                       "[[file:~/.emacs::substring-no-properties (org-store-link nil))))))]]")))
-            (org-links-store-link-fallback t)
-            (should (equal (car kill-ring)
-                           "[[file:~/.emacs::substring-no-properties (org-store-link nil))))))]]"))))))
+      (set-major-mode 'prog-mode)
+      (goto-char (point-max))
+      (cl-letf (((symbol-function 'org-store-link)
+                 (lambda (&optional _arg)
+                   "[[file:~/.emacs::substring-no-properties (org-store-link nil))))))]]")))
+        (org-links-store-link-fallback t)
+        (should (equal (car kill-ring)
+                       "[[file:~/.emacs::substring-no-properties (org-store-link nil))))))]]"))))))
 
 (ert-deftest org-links-tests-store-link-fallback--fundamental-mode-no-arg ()
   (with-temp-buffer
-  (let ((kill-ring nil))
-          (set-major-mode 'fundamental-mode)
-          (cl-letf (((symbol-function 'org-store-link)
-                     (lambda (&optional _arg) "[[file:/fundamental.txt]]")))
-            (org-links-store-link-fallback nil)
-            (should (equal (car kill-ring) "[[file:/fundamental.txt::1]]")))(set-buffer-modified-p nil))))
+    (let ((kill-ring nil))
+      (set-major-mode 'fundamental-mode)
+      (cl-letf (((symbol-function 'org-store-link)
+                 (lambda (&optional _arg) "[[file:/fundamental.txt]]")))
+        (org-links-store-link-fallback nil)
+        (should (equal (car kill-ring) "[[file:/fundamental.txt::1]]")))(set-buffer-modified-p nil))))
 
 (ert-deftest org-links-tests-store-link-fallback--text-mode-non-org ()
   (with-temp-buffer
-  (let ((kill-ring nil))
-          (set-major-mode 'text-mode)
-          (cl-letf (((symbol-function 'org-store-link)
-                     (lambda (&optional _arg) "[[file:/fundamental.txt]]")))
-            (org-links-store-link-fallback nil)
-            (should (string= (car kill-ring) "[[file:/fundamental.txt::1]]")))(set-buffer-modified-p nil))))
+    (let ((kill-ring nil))
+      (set-major-mode 'text-mode)
+      (cl-letf (((symbol-function 'org-store-link)
+                 (lambda (&optional _arg) "[[file:/fundamental.txt]]")))
+        (org-links-store-link-fallback nil)
+        (should (string= (car kill-ring) "[[file:/fundamental.txt::1]]")))(set-buffer-modified-p nil))))
 
 (ert-deftest org-links-tests-store-link-fallback--org-mode-default ()
   (with-temp-buffer
-  (let ((kill-ring nil))
-          (set-major-mode 'org-mode)
-          (cl-letf (((symbol-function 'org-store-link)
-                     (lambda (&optional _arg) "[[file:/org.org::]]")))
-            (org-links-store-link-fallback nil)
-            (should (string= (car kill-ring) "[[file:/org.org::]]")))(set-buffer-modified-p nil))))
-      ;; (kill-buffer buf))))
+    (let ((kill-ring nil))
+      (set-major-mode 'org-mode)
+      (cl-letf (((symbol-function 'org-store-link)
+                 (lambda (&optional _arg) "[[file:/org.org::]]")))
+        (org-links-store-link-fallback nil)
+        (should (string= (car kill-ring) "[[file:/org.org::]]")))(set-buffer-modified-p nil))))
+;; (kill-buffer buf))))
 ;;; - advices activation
 ;; ;; opening
 ;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
@@ -289,90 +289,87 @@
      ,@body))
 
 (ert-deftest org-links-store-extended-image-thumbnail-test ()
-  (with-mocks
-   (with-temp-buffer
-           ;; Simulate mode
-           (setq major-mode 'image-dired-thumbnail-mode)
-           (setq kill-ring nil)
-           (org-links-store-extended nil))
-       (should (string= (car kill-ring) "file:/mock/pic.jpg"))(set-buffer-modified-p nil)))
+  (with-temp-buffer
+    (with-mocks
+     ;; Simulate mode
+     (setq major-mode 'image-dired-thumbnail-mode)
+     (setq kill-ring nil)
+     (org-links-store-extended nil)
+     (should (string= (car kill-ring) "file:/mock/pic.jpg"))(set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-image-mode-test ()
-  (with-mocks
-   (with-temp-buffer
-           (setq major-mode 'image-dired-image-mode)
-           (setq buffer-file-name "/mock/image.png")
-           (setq kill-ring nil)
-           (org-links-store-extended nil)
-           (should (string= (car kill-ring) "file:/mock/image.png"))(set-buffer-modified-p nil))))
+  (with-temp-buffer
+    (with-mocks
+     (setq major-mode 'image-dired-image-mode)
+     (setq buffer-file-name "/mock/image.png")
+     (setq kill-ring nil)
+     (org-links-store-extended nil)
+     (should (string= (car kill-ring) "file:/mock/image.png"))(set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-region-test ()
   (with-temp-buffer
-          (with-org-link-config
-          (with-mocks
-           (setq major-mode 'text-mode)
-           (setq buffer-file-name "/mock/test.txt")
-           (insert "foo\nbar\nbaz\nqux")
-           (set-mark (point-min))
-           (goto-char (point-max))
-           (setq kill-ring nil)
-           (org-links-store-extended nil)
-           (should (string-match-p
-                    "[[file:/mock/test.txt::1-4]]" (car kill-ring)))))
-          (set-buffer-modified-p nil)))
+    (with-org-link-config
+     (let ((kill-buffer-query-functions))
+       (setq major-mode 'text-mode)
+       (setq buffer-file-name "/mock/test.txt")
+       (insert "foo\nbar\nbaz\nqux")
+       (set-mark (point-min))
+       (goto-char (point-max))
+       (setq kill-ring nil)
+       (org-links-store-extended nil)
+       (should (string-match-p
+                "[[file:/mock/test.txt::1-4]]" (car kill-ring)))))
+    (set-buffer-modified-p nil)))
 
 (ert-deftest org-links-store-extended-prog-mode-test ()
   (with-temp-buffer
-          (with-mocks
-           (setq major-mode 'prog-mode)
-           (setq buffer-file-name "/mock/code.el")
-           (insert "myline")
-           (setq kill-ring nil)
-           (goto-char (point-min))
-           (org-links-store-extended nil))
-           (should (string-match-p "\\[\\[file:/mock/code.el::1\\]\\]" (car kill-ring)))
-           (set-buffer-modified-p nil)))
+    (let ((kill-buffer-query-functions))
+      (setq major-mode 'prog-mode)
+      (setq buffer-file-name "/mock/code.el")
+      (insert "myline")
+      (setq kill-ring nil)
+      (goto-char (point-min))
+      (org-links-store-extended nil))
+    (should (string-match-p "\\[\\[file:/mock/code.el::1\\]\\]" (car kill-ring)))
+    (set-buffer-modified-p nil)))
 
 (ert-deftest org-links-store-extended-prog-mode-arg-test ()
   (with-temp-buffer
-          (with-mocks
-          (setq major-mode 'prog-mode)
-          (setq buffer-file-name "/mock/code.el")
-          (insert "myline")
-          (setq kill-ring nil)
-          (goto-char (point-min))
-          (org-links-store-extended 1)
-          (should (string= (car kill-ring) "[[file:/mock/code.el::1::myline]]" )))
-          (set-buffer-modified-p nil)))
+    (let ((kill-buffer-query-functions))
+      (setq major-mode 'prog-mode)
+      (setq buffer-file-name "/mock/code.el")
+      (insert "myline")
+      (setq kill-ring nil)
+      (goto-char (point-min))
+      (org-links-store-extended 1)
+      (should (string= (car kill-ring) "[[file:/mock/code.el::1::myline]]" )))
+    (set-buffer-modified-p nil)))
 
 (ert-deftest org-links-store-extended-org-mode-test ()
   (with-temp-buffer
-  ;; (let ((buf (generate-new-buffer "*test12*")))
-    ;; (unwind-protect
-        ;; (with-current-buffer buf
-          (with-mocks
-          (org-mode)
-          (setq buffer-file-name "/mock/org.org")
-          (insert "* headline")
-          (setq kill-ring nil)
-          (goto-char (point-min))
-          (org-links-store-extended nil)
-          (print (car kill-ring))
-          (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]")))
-          (set-buffer-modified-p nil)))
+    (let ((kill-buffer-query-functions))
+      (org-mode)
+      (setq buffer-file-name "/mock/org.org")
+      (insert "* headline")
+      (setq kill-ring nil)
+      (goto-char (point-min))
+      (org-links-store-extended nil)
+      (print (car kill-ring))
+      (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]")))
+    (set-buffer-modified-p nil)))
 
 (ert-deftest org-links-store-extended-org-mode-arg-test ()
   (with-temp-buffer
-          (with-mocks
-          (org-mode)
-          (setq buffer-file-name "/mock/org.org")
-          (insert "* headline")
-          (setq kill-ring nil)
-          (goto-char (point-min))
-          (org-links-store-extended 1)
-          (should (string= (car kill-ring) "[[file:/mock/org.org::1::* headline]]"))
-          (should (string-match-p "\\* headline" (car kill-ring))))
-          (set-buffer-modified-p nil)))
+    (let ((kill-buffer-query-functions))
+      (org-mode)
+      (setq buffer-file-name "/mock/org.org")
+      (insert "* headline")
+      (setq kill-ring nil)
+      (goto-char (point-min))
+      (org-links-store-extended 1)
+      (should (string= (car kill-ring) "[[file:/mock/org.org::1::* headline]]"))
+      (should (string-match-p "\\* headline" (car kill-ring))))
+    (set-buffer-modified-p nil)))
 ;;; provide
 (provide 'org-links-tests)
 

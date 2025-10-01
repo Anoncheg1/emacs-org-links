@@ -307,9 +307,9 @@
      (should (string= (car kill-ring) "file:/mock/image.png"))(set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-region-test ()
-  (with-temp-buffer
-    (with-org-link-config
-     (let ((kill-buffer-query-functions))
+  (let ((kill-buffer-query-functions))
+    (with-temp-buffer
+      (with-org-link-config
        (setq major-mode 'text-mode)
        (setq buffer-file-name "/mock/test.txt")
        (insert "foo\nbar\nbaz\nqux")
@@ -318,36 +318,36 @@
        (setq kill-ring nil)
        (org-links-store-extended nil)
        (should (string-match-p
-                "[[file:/mock/test.txt::1-4]]" (car kill-ring)))))
-    (set-buffer-modified-p nil)))
+                "[[file:/mock/test.txt::1-4]]" (car kill-ring))))
+      (set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-prog-mode-test ()
-  (with-temp-buffer
-    (let ((kill-buffer-query-functions))
+  (let ((kill-buffer-query-functions))
+    (with-temp-buffer
       (setq major-mode 'prog-mode)
       (setq buffer-file-name "/mock/code.el")
       (insert "myline")
       (setq kill-ring nil)
       (goto-char (point-min))
-      (org-links-store-extended nil))
-    (should (string-match-p "\\[\\[file:/mock/code.el::1\\]\\]" (car kill-ring)))
-    (set-buffer-modified-p nil)))
+      (org-links-store-extended nil)
+      (should (string-match-p "\\[\\[file:/mock/code.el::1\\]\\]" (car kill-ring)))
+      (set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-prog-mode-arg-test ()
-  (with-temp-buffer
-    (let ((kill-buffer-query-functions))
+  (let ((kill-buffer-query-functions))
+    (with-temp-buffer
       (setq major-mode 'prog-mode)
       (setq buffer-file-name "/mock/code.el")
       (insert "myline")
       (setq kill-ring nil)
       (goto-char (point-min))
       (org-links-store-extended 1)
-      (should (string= (car kill-ring) "[[file:/mock/code.el::1::myline]]" )))
-    (set-buffer-modified-p nil)))
+      (should (string= (car kill-ring) "[[file:/mock/code.el::1::myline]]" ))
+      (set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-org-mode-test ()
-  (with-temp-buffer
-    (let ((kill-buffer-query-functions))
+  (let ((kill-buffer-query-functions))
+    (with-temp-buffer
       (org-mode)
       (setq buffer-file-name "/mock/org.org")
       (insert "* headline")
@@ -355,12 +355,12 @@
       (goto-char (point-min))
       (org-links-store-extended nil)
       (print (car kill-ring))
-      (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]")))
-    (set-buffer-modified-p nil)))
+      (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]"))
+      (set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-org-mode-arg-test ()
-  (with-temp-buffer
-    (let ((kill-buffer-query-functions))
+  (let ((kill-buffer-query-functions))
+    (with-temp-buffer
       (org-mode)
       (setq buffer-file-name "/mock/org.org")
       (insert "* headline")
@@ -368,8 +368,8 @@
       (goto-char (point-min))
       (org-links-store-extended 1)
       (should (string= (car kill-ring) "[[file:/mock/org.org::1::* headline]]"))
-      (should (string-match-p "\\* headline" (car kill-ring))))
-    (set-buffer-modified-p nil)))
+      (should (string-match-p "\\* headline" (car kill-ring)))
+      (set-buffer-modified-p nil))))
 ;;; provide
 (provide 'org-links-tests)
 

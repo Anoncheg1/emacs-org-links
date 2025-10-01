@@ -114,8 +114,7 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
                                           :follow
                                           (lambda (url arg)
                                               (setq-local url (concat "http:" url arg))
-                                              (kill-new url)
-                                              )))))
+                                              (kill-new url))))))
 ```
 
 ## How this package works
@@ -123,6 +122,16 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
 Provided function for copying link to kill ring with additional format for programming mode.
 
 For opening links we add hook to org-execute-file-search-functions that called from `org-link-search' function, used by Org function for oppening files: `org-open-at-point' (bound to C-c C-o by default in Org mode.) and `org-open-at-point-global'.
+
+## Other packages
+- Navigation in Dired, Packages, Buffers modes https://github.com/Anoncheg1/firstly-search
+- Search with Chinese	https://github.com/Anoncheg1/pinyin-isearch
+- Ediff fix		https://github.com/Anoncheg1/ediffnw
+- Dired history	https://github.com/Anoncheg1/dired-hist
+- Selected window contrast	https://github.com/Anoncheg1/selected-window-contrast
+- Copy link to clipboard	https://github.com/Anoncheg1/org-links
+- Solution for "callback hell"	https://github.com/Anoncheg1/emacs-async1
+
 
 ## Donate, sponsor author
 You can sponsor author crypto money directly with crypto currencies:

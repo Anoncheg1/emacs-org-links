@@ -217,7 +217,7 @@ For usage with original Org `org-open-at-point-global' function."
               ;; - PATH::NUM::LINE -  all modes
               (t
                (if (bound-and-true-p buffer-file-name)
-                   (if arg
+                   (if (not arg)
                        (org-links-create-link (concat
                                                "file:"
                                                (buffer-file-name (buffer-base-buffer))

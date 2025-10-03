@@ -101,8 +101,9 @@ Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
 (require 'ol)
 (global-set-key (kbd "C-c C-o") #'org-open-at-point-global) ; optional
 ;; recommended:
-(setopt org-link-file-path-type 'absolute)
-(setopt org-link-search-must-match-exact-headline nil)
+(setopt org-link-file-path-type 'absolute) ; create links with full path
+(setopt org-link-search-must-match-exact-headline nil) ; use fuzzy search of Org links
+(setopt org-link-descriptive nil) ; show links in raw, don't hide
 ```
 
 ### Copy link to ring instead of opening

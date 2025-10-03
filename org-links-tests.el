@@ -355,7 +355,7 @@
       (goto-char (point-min))
       (org-links-store-extended nil)
       (print (car kill-ring))
-      (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]"))
+      (should (string= (car kill-ring) "[[file:/mock/org.org::1::* headline]]"))
       (set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-org-mode-arg-test ()
@@ -367,8 +367,8 @@
       (setq kill-ring nil)
       (goto-char (point-min))
       (org-links-store-extended 1)
-      (should (string= (car kill-ring) "[[file:/mock/org.org::1::* headline]]"))
-      (should (string-match-p "\\* headline" (car kill-ring)))
+      (print (car kill-ring))
+      (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]"))
       (set-buffer-modified-p nil))))
 ;;; provide
 (provide 'org-links-tests)

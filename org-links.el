@@ -71,6 +71,11 @@
 
 ;; You may advanced configuration in README.md file.
 
+;; I recommend to set options:
+;; (setopt org-link-file-path-type 'absolute) ; create links with full path
+;; (setopt org-link-search-must-match-exact-headline nil) ; use fuzzy search of Org links
+;; (setopt org-link-descriptive nil) ; show links in raw, don't hide
+
 ;; *How this works*:
 ;; We provide new function `org-links-store-extended' that use
 ;;  standard ol.el function and we add additional format for
@@ -431,7 +436,7 @@ LINK is plain link without []."
       (if-let* ((n1 (org-links--find-line line)))
           (list n1 nil)
         ;; else
-        (list (string-to-number num1) nil))))))
+        (list (string-to-number num1)))))))
 
 ;; (org-links--get-target-position-for-link "1-2::asd")
 

@@ -1,16 +1,28 @@
 # emacs-org-links
-Provide function to copy links to clipboard kill ring with additional number of line, this allow to search link in two steps: 1) by LINE 2) by NUM.
+
+Org mode supports file links with line numbers and line via the following syntax:
+- `[[PATH::NUM][Link description]]`
+- `[[PATH::LINE][Link description]]`
 
 You just copy link with *C-c C-w* and insert with *C-y* in any mode.
 
-- `[[PATH::NUM::LINE]]` - At opening we search for LINE first, if not found exactly one, we use NUM line number.
-- `[[PATH::NUM-NUM::LINE]]`
-- `[[PATH::NUM-NUM]]`
-- `[[PATH::NUM]]` creating
+This package (org-links) provides facilities to help create and manage these links:
+1) The command `org-links-store-extended' copies a link to the current file, at the current point.
+2) The syntax above is extended to include a few variants that are useful for linking into source code:
+- [[PATH::NUM::LINE]]
+- [[PATH::NUM-NUM::LINE]]
+- [[PATH::NUM-NUM]]
+- [[PATH::NUM]] support creation
+3) A helpful warning is triggered when a link has an ambiguous target (e.g., in the case where two targets are found).
 
 For ex. `[[file:./notes/warehouse.el::23::(defun alina (pic))]]`
 
-Also, provide warning if two Org targets exist in one file.
+
+
+## How  [[PATH::NUM::LINE]] links works?
+First, we search for LINE, if not found we use NUM line number.
+
+`[[NUM-NUM]]` - used for region selection.
 
 ## Why?
 
@@ -40,8 +52,8 @@ If your package is available on MELPA, add this to your init file:
 
 If installing from a GitHub repo (not yet in MELPA), specify the source:
 ```elisp
-(use-package async1
-  :straight (async1 :host github :repo "Anoncheg1/emacs-org-links"))
+(use-package org-links
+  :straight (org-links :host github :repo "Anoncheg1/emacs-org-links"))
 ;; Requires straight.el.
 ```
 

@@ -54,6 +54,8 @@
 ;; 3) A helpful warning is triggered when a link has an ambiguous target
 ;;    (e.g., in the case where two targets are found).
 
+;; For ex. `[[file:./notes/warehouse.el::23::(defun alina (pic))]]`
+
 ;; Why? Allow to point more flexible to use links with AI.
 
 ;; How  [[PATH::NUM::LINE]] links works?

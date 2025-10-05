@@ -144,7 +144,7 @@ For opening links we add hook to org-execute-file-search-functions that called f
 - Selected window contrast	https://github.com/Anoncheg1/selected-window-contrast
 - Copy link to clipboard	https://github.com/Anoncheg1/org-links
 - Solution for "callback hell"	https://github.com/Anoncheg1/emacs-async1
-
+- Call LLMs and AI agents from Org-mode ai block. https://github.com/Anoncheg1/emacs-oai
 
 ## Donate, sponsor author
 You can sponsor author crypto money directly with crypto currencies:

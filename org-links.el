@@ -244,7 +244,8 @@ For usage with original Org `org-open-at-point-global' function."
     (kill-new link)
     (message (concat link "\t- copied to clipboard"))))
 
-;;; - Fallback "Save to clipboard" without requirement of org-links this package
+;;; - Fallback "Save to clipboard" without requirement of org-links
+
 (defun org-links-store-link-fallback (arg)
   "Copy Org-mode link to kill ring and clipboard from any mode.
 Without a  prefix argument  ARG, copies a  link PATH::NUM  (current line
@@ -411,7 +412,8 @@ Recenter screen and Two times check visibility."
         (when (get-buffer-window (current-buffer)) ; if showed
           (recenter 1))))))
 
-;;; - Open link - for [[PATH::NUM-NUM]] - org-execute-file-search-functions +  advice
+;;; - Open link - for [[PATH::NUM-NUM]] - org-execute-file-search-functions
+;; +  advice
 
 (defun org-links--local-get-target-position-for-link (link)
   "For LINK string return (line-num-beg line-num-end) or (line-num-beg) or nil.

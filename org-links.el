@@ -1,4 +1,4 @@
-;;; org-links.el --- Copy link with numer of current line in all modes -*- lexical-binding: t -*-
+;;; org-links.el --- Better manage line numbers in your org-mode links -*- lexical-binding: t -*-
 
 ;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
 ;; Keywords: org, text, hypermedia, url
@@ -7,7 +7,7 @@
 ;; Created: 30 Aug 2025
 ;; Package-Requires: ((emacs "27.1"))
 ;; > (Emacs 26+) for negative regex
-;; (compat "30.1")
+;; (compat "30.")
 ;; "27.1" for ol.el
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; Copyright (c) 2025 github.com/Anoncheg1,codeberg.org/Anoncheg
@@ -36,32 +36,30 @@
 ;;; Commentary:
 
 ;; *About*:
-;; 1) add function for copying link to kill ring clipboard, faster
-;; search for small files.
-;; 2) extend links with new types of more robust links, especially
-;; useful for creating links to files with programming code.
-;; 3) add warning at opening link if two targets was found for classic
-;; old Org link.
+;; org-mode supports  file links  with line numbers  and line  via the
+;;  following syntax:
+;; [[PATH::NUM][Link description]]
+;; [[PATH::LINE][Link description]]
 ;;
-;;
-;; Additional link formats:
+;; This package (org-links) provides facilities to help create and manage
+;;  these links:
+;; 1) The command `org-links-store-extended' copies a link to the
+;;    current file, at the current point.
+;; 2) The syntax above is extended to include a few variants that are
+;;    useful for linking into source code:
 ;; - [[PATH::NUM::LINE]]
 ;; - [[PATH::NUM-NUM::LINE]]
 ;; - [[PATH::NUM-NUM]]
-;; - [[PATH::NUM]] creating
+;; - [[PATH::NUM]] support creation
+;; 3) A helpful warning is triggered when a link has an ambiguous target
+;;    (e.g., in the case where two targets are found).
 
-;; [[PATH::NUM::LINE]] - At opening we search for LINE first, if not
-;; found exactly one, we use NUM line number.
+;; Why? Allow to point more flexible to use links with AI.
 
-;; [[NUM-NUM]] - is position of cursor at copying or region begin and end.
+;; How  [[PATH::NUM::LINE]] links works?
+;;   First, we search for LINE, if not found we use NUM line number.
 
-;; Org support opening links PATH::NUM with line number but don't
-;; implement creation of them. Implemeted here.
-
-;; *Features provided*:
-;; - respect org-link-context-for-files, if not set store only number.
-;; - correctly store file in image-dired-thumbnail-mode
-;; - Add support for image-dired-thumbnail-mode and image-dired-image-mode
+;; [[NUM-NUM]] - used for region selection.
 
 ;; *Configuration*:
 ;; (require 'org-links)
@@ -71,7 +69,13 @@
 
 ;; You may advanced configuration in README.md file.
 
-;; I recommend to set options:
+;;; Additioan information.
+;; *Features provided*:
+;; - respect org-link-context-for-files, if not set store only number.
+;; - correctly store file in image-dired-thumbnail-mode
+;; - Add support for image-dired-thumbnail-mode and image-dired-image-mode
+
+;; I recommend to set those Org ol.el options for clarity:
 ;; (setopt org-link-file-path-type 'absolute) ; create links with full path
 ;; (setopt org-link-search-must-match-exact-headline nil) ; use fuzzy search of Org links
 ;; (setopt org-link-descriptive nil) ; show links in raw, don't hide
@@ -88,12 +92,13 @@
 
 ;; Other packages:
 ;; - Navigation in Dired, Packages, Buffers modes https://github.com/Anoncheg1/firstly-search
-;; - Search with Chinese			https://github.com/Anoncheg1/pinyin-isearch
+;; - Search with Mandarin Chinese pinying	https://github.com/Anoncheg1/pinyin-isearch
 ;; - Ediff fix					https://github.com/Anoncheg1/ediffnw
 ;; - Dired history				https://github.com/Anoncheg1/dired-hist
-;; - Selected window contrast			https://github.com/Anoncheg1/selected-window-contrast
-;; - Copy link to clipboard			https://github.com/Anoncheg1/org-links
+;; - Mark selected window with contrast	https://github.com/Anoncheg1/selected-window-contrast
+;; - Org hyperlinks enhanced			https://github.com/Anoncheg1/org-links
 ;; - Solution for "callback hell"		https://github.com/Anoncheg1/emacs-async1
+;; - Call LLMs and AI agents from Org-mode ai block. https://github.com/Anoncheg1/emacs-oai
 
 ;; *DONATE MONEY*:
 ;; You can sponsor author directly with crypto currencies:

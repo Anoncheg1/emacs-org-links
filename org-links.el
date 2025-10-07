@@ -159,7 +159,7 @@ ARG is universal argument, if non-nil"
         (let ((path (match-string 1 link-string))
               (desc (match-string 2 link-string)))
 
-          (print (list path desc (org-links-create-link path desc)))
+          ;; (print (list path desc (org-links-create-link path desc)))
          (org-links-create-link path desc))
          ;; else - other types
          (org-links-create-link link-string))))
@@ -479,16 +479,14 @@ Argument ORIG-FUN is `org-open-file' that breaks at NUM-NUM,
 NUM-NUM::LINE, NUM::LINE formats.
 Use current buffer for search line.
 Optional argument ARGS is `org-open-file' arguments."
-  (print (list "org-links-org-open-file-advice" args))
+  ;; (print (list "org-links-org-open-file-advice" args))
   (seq-let (path in-emacs string search) args
     (setq string string) ;; noqa: unused
     (if search ; part after ::
         ;; (if-let ((repos (org-links--get-target-position-for-link search)))
         ;;     (let ((pos1 (car repos))
         ;;           (pos2 (cadr repos)))
-        ;;       (apply orig-fun (list path in-emacs (string-to-number num1)))
-
-
+              ;; (apply orig-fun (list path in-emacs (string-to-number num1)))
         (cond
          ;; NUM-NUM
          ((when-let* ((num1 (and (string-match org-links-num-num-regexp search)
@@ -513,6 +511,7 @@ Optional argument ARGS is `org-open-file' arguments."
          ((when-let* ((num1 (and (string-match org-links-num-line-regexp search)
 	                         (match-string 1 search)))
 	              (line (match-string 2 search)))
+            (apply orig-fun (list path 'emacs)) ; in emacs
             (if-let ((line-position (org-links--find-line line)))
                 (org-goto-line line-position)
               ;; else

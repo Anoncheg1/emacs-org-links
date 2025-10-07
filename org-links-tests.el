@@ -274,6 +274,36 @@
     (should (equal (org-links--find-line "foo") nil))
     )
   )
+;;; - org-open-file advice to other file
+(ert-deftest org-links-jump-num-line-test ()
+  (let ((kill-buffer-query-functions))
+    (with-temp-buffer
+      (with-org-link-config
+       (org-mode)
+       (setq buffer-file-name "/mock/org.org")
+       (insert "some-text above\n")
+       (insert "* headline")
+       (org-links-store-extended nil)
+       (forward-line -1)
+       (insert "some-text above2\n")
+       (forward-line 1)
+       (insert "\nsome-text below\n")
+       ;; (require 'xref)
+       ;; (xref-push-marker-stack)
+       (setq buffer-read-only t)
+       (with-temp-buffer
+         ;; (print (car kill-ring))
+         (insert (car kill-ring)) ; [[file:/mock/org.org::2::* headline]]
+         ;; (print (list "org-execute-file-search-functions" org-execute-file-search-functions))
+         ;; (setq buffer-read-only t)
+         (read-only-mode 1)
+         (org-open-at-point-global)
+         (should (string-equal "* headline" (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+         ;; (xref-go-back) ;; (xref-go-back)
+         ;; (xref-go-forward)
+         (set-buffer-modified-p nil))
+       (setq kill-ring nil)
+       (set-buffer-modified-p nil)))))
 ;;; - store link
 ;; Mocking necessary dependencies
 (defmacro with-mocks (&rest body)
@@ -354,7 +384,7 @@
       (setq kill-ring nil)
       (goto-char (point-min))
       (org-links-store-extended nil)
-      (print (car kill-ring))
+      ;; (print (car kill-ring))
       (should (string= (car kill-ring) "[[file:/mock/org.org::1::* headline]]"))
       (set-buffer-modified-p nil))))
 
@@ -367,7 +397,7 @@
       (setq kill-ring nil)
       (goto-char (point-min))
       (org-links-store-extended 1)
-      (print (car kill-ring))
+      ;; (print (car kill-ring))
       (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]"))
       (set-buffer-modified-p nil))))
 ;;; provide

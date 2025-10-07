@@ -41,20 +41,22 @@
 ;; [[PATH::NUM][Link description]]
 ;; [[PATH::LINE][Link description]]
 ;;
-;; This package (org-links) provides facilities to help create and manage
-;;  these links:
-;; 1) The command `org-links-store-extended' copies a link to the
-;;    current file, at the current point.
-;; 2) The syntax above is extended to include a few variants that are
-;;    useful for linking into source code:
+;; There is `find-file-at-point` functions globally (ffap.el) to
+;; follow PATH.
+;;
+;; This package (org-links) provides facilities to help create and
+;;  manage these links:
 ;; - [[PATH::NUM::LINE]]
 ;; - [[PATH::NUM-NUM::LINE]]
 ;; - [[PATH::NUM-NUM]]
 ;; - [[PATH::NUM]] support creation
-;; 3) A helpful warning is triggered when a link has an ambiguous target
-;;    (e.g., in the case where two targets are found).
-
 ;; For ex. `[[file:./notes/warehouse.el::23::(defun alina (pic))]]`
+;;
+;; Also provided:
+;; 1) The command `org-links-store-extended' copies a link to the
+;;    current file, at the current point.
+;; 2) A helpful warning is triggered when a link has an ambiguous target
+;;    (e.g., in the case where two targets are found).
 
 ;; Why? Allow to point more flexible to use links with AI.
 

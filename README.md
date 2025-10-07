@@ -4,7 +4,7 @@ Org mode supports file links with line numbers and line via the following syntax
 - `[[PATH::NUM][Link description]]`
 - `[[PATH::LINE][Link description]]`
 
-You just copy link with *C-c C-w* and insert with *C-y* in any mode.
+There is `find-file-at-point` functions from ffap.el.
 
 This package (org-links) provides facilities to help create and manage these links:
 1) The command `org-links-store-extended' copies a link to the current file, at the current point.
@@ -17,7 +17,7 @@ This package (org-links) provides facilities to help create and manage these lin
 
 For ex. `[[file:./notes/warehouse.el::23::(defun alina (pic))]]`
 
-
+You just copy link with *C-c C-w* and insert with *C-y* in any mode.
 
 ## How  [[PATH::NUM::LINE]] links works?
 First, we search for LINE, if not found we use NUM line number.

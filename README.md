@@ -9,10 +9,10 @@ There is `find-file-at-point` functions from ffap.el.
 This package (org-links) provides facilities to help create and manage these links:
 1) The command `org-links-store-extended' copies a link to the current file, at the current point.
 2) The syntax above is extended to include a few variants that are useful for linking into source code:
-- [[PATH::NUM::LINE]]
-- [[PATH::NUM-NUM::LINE]]
-- [[PATH::NUM-NUM]]
-- [[PATH::NUM]] support creation
+- `[[PATH::NUM::LINE]]`
+- `[[PATH::NUM-NUM::LINE]]`
+- `[[PATH::NUM-NUM]]`
+
 3) A helpful warning is triggered when a link has an ambiguous target (e.g., in the case where two targets are found).
 
 For ex. `[[file:./notes/warehouse.el::23::(defun alina (pic))]]`

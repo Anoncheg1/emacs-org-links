@@ -41,15 +41,13 @@
 ;; [[PATH::NUM][Link description]]
 ;; [[PATH::LINE][Link description]]
 ;;
-;; There is `find-file-at-point` functions globally (ffap.el) to
-;; follow PATH.
-;;
-;; This package (org-links) provides facilities to help create and
-;;  manage these links:
+;; This package (org-links) The syntax above is extended with
+;;  following formats and facilities provided to help create and
+;;  manage them all.
 ;; - [[PATH::NUM::LINE]]
 ;; - [[PATH::NUM-NUM::LINE]]
 ;; - [[PATH::NUM-NUM]]
-;; - [[PATH::NUM]] support creation
+
 ;; For ex. `[[file:./notes/warehouse.el::23::(defun alina (pic))]]`
 ;;
 ;; Also provided:
@@ -64,6 +62,9 @@
 ;;   First, we search for LINE, if not found we use NUM line number.
 
 ;; [[NUM-NUM]] - used for region selection.
+
+;; Also, Emacs have `find-file-at-point` functions globally (ffap.el)
+;; to follow PATHs.
 
 ;; *Configuration*:
 ;; (require 'org-links)

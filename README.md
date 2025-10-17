@@ -74,24 +74,23 @@ If installing from a GitHub repo (not yet in MELPA), specify the source:
 ```elisp
 (defun org-links-store-link-fallback (arg)
   "Copy Org-mode link to kill ring and clipboard from any mode.
-Without a  prefix argument  ARG, copies a  link PATH::NUM  (current line
-number).
-Count lines from 1 like `line-number-at-pos' function does.
-With a universal argument C - u, copies a link in the form PATH::LINE.
-Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
+Without a universal argument C - u, copies a link in the form
+PATH::LINE.
+With a universal argument ARG, copies a link as PATH::NUM (current line
+number).  Count lines from 1 like `line-number-at-pos' function does.
+Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
+`image-mode' modes."
   (interactive "P")
   (let ((link
          (if (derived-mode-p 'image-dired-thumbnail-mode)
              (concat "[[file:" (funcall (intern "image-dired-original-file-name")) "]]")
            ;; - else
-           (if (derived-mode-p 'image-dired-image-mode)
-               (concat "[[file:" (buffer-file-name (buffer-base-buffer)) "]]")
+           (if (or (derived-mode-p (intern "image-dired-image-mode"))
+                   (derived-mode-p (intern "image-mode")))
+               (concat "file:" (buffer-file-name (buffer-base-buffer)))
              ;; - else - programming, text and fundamental
-             (if (and (not arg)
-                      (or (derived-mode-p 'prog-mode)
-                          (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
-                          (derived-mode-p 'fundamental-mode)))
-                 (let* ((org-link-context-for-files)
+             (if arg
+                 (let* ((org-link-context-for-files) ; set to nil to replace fuzzy links with line numbers
                         (link (substring-no-properties (org-store-link nil))))
                    (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))
                ;; else - prog with argument or Org - with line for fuzzy search

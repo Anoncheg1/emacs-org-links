@@ -6,9 +6,9 @@
 ;; Version: 0.2
 ;; Created: 30 Aug 2025
 ;; Package-Requires: ((emacs "27.1"))
-;; > (Emacs 26+) for negative regex
-;; (compat "30.")
-;; "27.1" for ol.el
+;;   > (Emacs 26+) for negative regex
+;;   (compat "30.")
+;;   "27.1" for ol.el
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; Copyright (c) 2025 github.com/Anoncheg1,codeberg.org/Anoncheg
 
@@ -184,6 +184,9 @@ For usage with original Org `org-open-at-point-global' function."
               ;; - Images mode 2
               ((derived-mode-p (intern "image-dired-image-mode"))
                (concat "file:" (buffer-file-name (buffer-base-buffer))))
+              ;; - Images mode 2
+              ((derived-mode-p (intern "image-mode"))
+               (concat "file:" (buffer-file-name (buffer-base-buffer))))
               ;; - Buffer menu
               ((derived-mode-p 'Buffer-menu-mode)
                (concat "file:" (or (buffer-file-name (Buffer-menu-buffer t))
@@ -251,25 +254,27 @@ For usage with original Org `org-open-at-point-global' function."
 
 (defun org-links-store-link-fallback (arg)
   "Copy Org-mode link to kill ring and clipboard from any mode.
-Without a  prefix argument  ARG, copies a  link PATH::NUM  (current line
-number).
-Count lines from 1 like `line-number-at-pos' function does.
-With a universal argument C - u, copies a link in the form PATH::LINE.
-Support `image-dired-thumbnail-mode' and `image-dired-image-mode' modes."
+Without a universal argument C - u, copies a link in the form
+PATH::LINE.
+With a universal argument ARG, copies a link as PATH::NUM (current line
+number).  Count lines from 1 like `line-number-at-pos' function does.
+Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
+`image-mode' modes."
   (interactive "P")
   (let ((link
          (if (derived-mode-p 'image-dired-thumbnail-mode)
              (concat "[[file:" (funcall (intern "image-dired-original-file-name")) "]]")
            ;; - else
-           (if (derived-mode-p 'image-dired-image-mode)
-               (concat "[[file:" (buffer-file-name (buffer-base-buffer)) "]]")
+           (if (or (derived-mode-p (intern "image-dired-image-mode"))
+                   (derived-mode-p (intern "image-mode")))
+               (concat "file:" (buffer-file-name (buffer-base-buffer)))
              ;; - else - programming, text and fundamental
-             (if (and (not arg)
-                      (or (derived-mode-p 'prog-mode)
-                          (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
-                          (derived-mode-p 'fundamental-mode)))
-                 (let* (
-                        ;; (org-link-context-for-files)
+             ;; (and (not arg)
+             ;;          (or (derived-mode-p 'prog-mode)
+             ;;              (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
+             ;;              (derived-mode-p 'fundamental-mode)))
+             (if arg
+                 (let* ((org-link-context-for-files) ; set to nil to replace fuzzy links with line numbers
                         (link (substring-no-properties (org-store-link nil))))
                    (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))
                ;; else - prog with argument or Org - with line for fuzzy search

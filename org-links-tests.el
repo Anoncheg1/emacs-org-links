@@ -71,7 +71,7 @@
       (cl-letf (((symbol-function 'image-dired-original-file-name)
                  (lambda () "foo.png")))
         (org-links-store-link-fallback nil)
-        (should (equal (car kill-ring) "[[file:foo.png]]"))))))
+        (should (equal (car kill-ring) "file:foo.png"))))))
 
 (ert-deftest org-links-tests-store-link-fallback--image-mode ()
   (if (display-graphic-p)
@@ -84,44 +84,58 @@
                                     (org-links-store-link-fallback nil)
                                     (should (equal (car kill-ring) "[[file:/bar/image.jpg]]")))))))))
 
-(ert-deftest org-links-tests-store-link-fallback--prog-mode-with-arg ()
+
+(ert-deftest org-links-tests-store-link-fallback--prog-mode-no-file ()
   (with-temp-buffer
     (let ((kill-ring nil))
       (set-major-mode 'prog-mode)
       (goto-char (point-max))
-      (cl-letf (((symbol-function 'org-store-link)
-                 (lambda (&optional _arg)
-                   "[[file:~/.emacs::substring-no-properties (org-store-link nil))))))]]")))
-        (org-links-store-link-fallback t)
-        (should (equal (car kill-ring)
-                       "[[file:~/.emacs::substring-no-properties (org-store-link nil))))))]]"))))))
+      (org-links-store-link-fallback)
+      (should (equal (car kill-ring)
+                     "[[file:::1]]")))))
 
-(ert-deftest org-links-tests-store-link-fallback--fundamental-mode-no-arg ()
+(ert-deftest org-links-tests-store-link-fallback--prog-mode-with-file ()
   (with-temp-buffer
     (let ((kill-ring nil))
-      (set-major-mode 'fundamental-mode)
-      (cl-letf (((symbol-function 'org-store-link)
-                 (lambda (&optional _arg) "[[file:/fundamental.txt]]")))
-        (org-links-store-link-fallback nil)
-        (should (equal (car kill-ring) "[[file:/fundamental.txt::1]]")))(set-buffer-modified-p nil))))
+      (set-major-mode 'prog-mode)
+      (setq buffer-file-name "/mock/p.py")
+      (goto-char (point-max))
+      (org-links-store-link-fallback)
+      (should (equal (car kill-ring)
+                     "[[file:/mock/p.py::1]]")))))
 
-(ert-deftest org-links-tests-store-link-fallback--text-mode-non-org ()
-  (with-temp-buffer
-    (let ((kill-ring nil))
-      (set-major-mode 'text-mode)
-      (cl-letf (((symbol-function 'org-store-link)
-                 (lambda (&optional _arg) "[[file:/fundamental.txt]]")))
-        (org-links-store-link-fallback nil)
-        (should (string= (car kill-ring) "[[file:/fundamental.txt::1]]")))(set-buffer-modified-p nil))))
 
-(ert-deftest org-links-tests-store-link-fallback--org-mode-default ()
+(ert-deftest org-links-tests-store-link-fallback--org-mode-no-file-no-arg ()
   (with-temp-buffer
     (let ((kill-ring nil))
       (set-major-mode 'org-mode)
-      (cl-letf (((symbol-function 'org-store-link)
-                 (lambda (&optional _arg) "[[file:/org.org::]]")))
-        (org-links-store-link-fallback nil)
-        (should (string= (car kill-ring) "[[file:/org.org::]]")))(set-buffer-modified-p nil))))
+      (org-links-store-link-fallback nil)
+      (should (string= (car kill-ring) "[[file:::1]]")))))
+
+(ert-deftest org-links-tests-store-link-fallback--org-mode-with-file-arg ()
+  (with-temp-buffer
+    (let ((kill-ring nil))
+      (set-major-mode 'org-mode)
+      (setq buffer-file-name "/mock/org.org")
+      (org-links-store-link-fallback 1)
+      (should (string= (car kill-ring) "[[file:/mock/org.org::1]]")))))
+
+(ert-deftest org-links-tests-store-link-fallback--org-mode-with-file-no-arg1 ()
+  (with-temp-buffer
+    (let ((kill-ring nil))
+      (set-major-mode 'org-mode)
+      (setq buffer-file-name "/mock/org.org")
+      (org-links-store-link-fallback nil)
+      (should (string= (car kill-ring) "[[file:/mock/org.org]]")))))
+
+(ert-deftest org-links-tests-store-link-fallback--org-mode-with-file-no-arg2 ()
+  (with-temp-buffer
+    (let ((kill-ring nil))
+      (set-major-mode 'org-mode)
+      (setq buffer-file-name "/mock/org.org")
+      (insert "* headline")
+      (org-links-store-link-fallback nil)
+      (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]")))))
 ;; (kill-buffer buf))))
 ;;; - advices activation
 ;; ;; opening

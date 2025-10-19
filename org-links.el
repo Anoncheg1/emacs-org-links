@@ -252,7 +252,7 @@ For usage with original Org `org-open-at-point-global' function."
 
 ;;; - Fallback "Save to clipboard" without requirement of org-links
 
-(defun org-links-store-link-fallback (arg)
+(defun org-links-store-link-fallback (&optional arg)
   "Copy Org-mode link to kill ring and clipboard from any mode.
 Without a universal argument C - u, copies a link in the form
 PATH::LINE.
@@ -261,24 +261,34 @@ number).  Count lines from 1 like `line-number-at-pos' function does.
 Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
 `image-mode' modes."
   (interactive "P")
+  ;; (require 'org)
   (let ((link
-         (if (derived-mode-p 'image-dired-thumbnail-mode)
-             (concat "[[file:" (funcall (intern "image-dired-original-file-name")) "]]")
-           ;; - else
-           (if (or (derived-mode-p (intern "image-dired-image-mode"))
-                   (derived-mode-p (intern "image-mode")))
-               (concat "file:" (buffer-file-name (buffer-base-buffer)))
-             ;; - else - programming, text and fundamental
-             ;; (and (not arg)
-             ;;          (or (derived-mode-p 'prog-mode)
-             ;;              (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
-             ;;              (derived-mode-p 'fundamental-mode)))
-             (if arg
-                 (let* ((org-link-context-for-files) ; set to nil to replace fuzzy links with line numbers
-                        (link (substring-no-properties (org-store-link nil))))
-                   (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))
-               ;; else - prog with argument or Org - with line for fuzzy search
-               (substring-no-properties (org-store-link nil)))))))
+         (cond
+          ((derived-mode-p (intern "image-dired-thumbnail-mode"))
+           (concat "file:" (funcall (intern "image-dired-original-file-name"))))
+
+          ((or (derived-mode-p (intern "image-dired-image-mode"))
+               (derived-mode-p (intern "image-mode")))
+           (concat "file:" (buffer-file-name (buffer-base-buffer))))
+
+          ((not (buffer-file-name (buffer-base-buffer))) ; buffer with no file
+           (concat "[[file:::" (number-to-string (line-number-at-pos)) "]]"))
+
+          ((derived-mode-p (intern "org-mode"))
+           (require 'org) ; hence we are in org anyway
+           (if arg ; - ::NUM
+               (let* ((org-link-context-for-files) ; set to nil to replace fuzzy links with line numbers
+                      (link (substring-no-properties (org-store-link nil))))
+                 (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))
+             ;; else - ::LINE
+             (substring-no-properties (org-store-link nil))))
+
+          ;; - else - programming, text and fundamental
+          ;;          (or (derived-mode-p 'prog-mode)
+          ;;              (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
+          ;;              (derived-mode-p 'fundamental-mode)))
+          (t
+           (concat "[[file:" (buffer-file-name (buffer-base-buffer)) "::" (number-to-string (line-number-at-pos)) "]]")))))
     (kill-new link)
     (message  "%s\t- copied to clipboard" link)))
 

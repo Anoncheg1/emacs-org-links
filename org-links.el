@@ -421,13 +421,13 @@ Recenter screen and Two times check visibility."
                                           (goto-char (point-min))
                                           (forward-line (1- num2))
                                           (point))))
-      (when (get-buffer-window (current-buffer)) ; if showed
+      (when (eq (window-buffer) (current-buffer)) ; if showed
         (recenter))
       (when (not (pos-visible-in-window-p (save-excursion
                                             (goto-char (point-min))
                                             (forward-line (1- num2))
                                             (point))))
-        (when (get-buffer-window (current-buffer)) ; if showed
+        (when (eq (window-buffer) (current-buffer)) ; if showed
           (recenter 1))))))
 
 ;;; - Open link - for [[PATH::NUM-NUM]] - org-execute-file-search-functions

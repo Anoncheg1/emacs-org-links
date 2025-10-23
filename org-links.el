@@ -216,7 +216,7 @@ For usage with original Org `org-open-at-point-global' function."
                    (derived-mode-p 'fundamental-mode))
 
                (if (bound-and-true-p buffer-file-name)
-                   (if arg
+                   (if (not arg)
                        ;; store in PATH::NUM::LINE format
                        (org-links-create-link (concat
                                                "file:"

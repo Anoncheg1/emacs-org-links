@@ -1,5 +1,6 @@
 ;;; org-links-tests.el --- Search line and fallback to number [[PATH::NUM::LINE]] -*- lexical-binding: t -*-
 
+
 ;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
 ;; Keywords: org, text, hypermedia, url
 ;; URL: https://github.com/Anoncheg1/emacs-org-links
@@ -365,7 +366,7 @@
                 "[[file:/mock/test.txt::1-4]]" (car kill-ring))))
       (set-buffer-modified-p nil))))
 
-(ert-deftest org-links-store-extended-prog-mode-test ()
+(ert-deftest org-links-store-extended-prog-mode--no-arg-test ()
   (let ((kill-buffer-query-functions))
     (with-temp-buffer
       (setq major-mode 'prog-mode)
@@ -373,7 +374,7 @@
       (insert "myline")
       (setq kill-ring nil)
       (goto-char (point-min))
-      (org-links-store-extended nil)
+      (org-links-store-extended 1)
       (should (string-match-p "\\[\\[file:/mock/code.el::1\\]\\]" (car kill-ring)))
       (set-buffer-modified-p nil))))
 
@@ -385,7 +386,7 @@
       (insert "myline")
       (setq kill-ring nil)
       (goto-char (point-min))
-      (org-links-store-extended 1)
+      (org-links-store-extended nil)
       (should (string= (car kill-ring) "[[file:/mock/code.el::1::myline]]" ))
       (set-buffer-modified-p nil))))
 

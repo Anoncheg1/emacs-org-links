@@ -248,7 +248,7 @@ For usage with original Org `org-open-at-point-global' function."
                  ;; else - *scratch* buffer
                  (org-links-create-link (org-links--create-simple-at-point arg)))))))
     (kill-new link)
-    (message (concat link "\t- copied to clipboard"))))
+    (princ link)))
 
 ;;; - Fallback "Save to clipboard" without requirement of org-links
 

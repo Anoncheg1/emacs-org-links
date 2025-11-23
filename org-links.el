@@ -113,6 +113,7 @@
 
 ;;; TODO
 ;; - each file: link should be generated with some description. (for export)
+;; - provide option FOR NUM::FUZZY: if several lines found jump to closes to NUM, not to exact NUM.
 
 ;;; Code:
 ;;; - Code
@@ -192,7 +193,6 @@ For usage with original Org `org-open-at-point-global' function."
                (concat "file:" (or (buffer-file-name (Buffer-menu-buffer t))
                                    (with-current-buffer (Buffer-menu-buffer t)
                                      default-directory))))
-
               ;; - NUM-NUM
               ((use-region-p)
                (prog1 (let ((path (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer))))))
@@ -556,7 +556,21 @@ Optional argument ARGS is `org-open-file' arguments."
 ;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
 ;; (advice-remove 'org-open-file #'org-links-org-open-file-advice)
 
-
+;;; - Better `org-open-at-point-global' to open link from string
+(defun org-links-org-open-at-point-global ()
+  "Function with additional ask for link if not found.
+`org-open-at-point-global' function."
+  (interactive)
+  (condition-case nil
+      (call-interactively #'org-open-at-point-global)
+    (user-error
+     (when kill-ring
+       (let ((link (read-buffer "link: " (when (string-match org-link-any-re (car kill-ring-yank-pointer))
+                                           (car kill-ring-yank-pointer)))))
+         (unless (string-empty-p link)
+           (with-temp-buffer
+             (insert link)
+             (call-interactively #'org-open-at-point-global))))))))
 ;;; provide
 (provide 'org-links)
 

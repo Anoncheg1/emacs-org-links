@@ -118,17 +118,22 @@ Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
 
 (add-to-list 'load-path "/home/g/sources/emacs-org-links")
 (if (not (require 'org-links nil 'noerror))
-    (global-set-key (kbd "C-c w") #'org-links-store-link-fallback)
-
+    (progn
+      ;; falback
+      (global-set-key (kbd "C-c w") #'org-links-store-link-fallback)
+      (require 'ol)
+      (global-set-key (kbd "C-c C-o") #'org-open-at-point-global)) ; optional
+  ;; - else
   ;; org-links configuration
   ;; opening
   (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
+  ;; (advice-add 'org-element-link-parser :around #'org-links--org-element-link-parser-advice)
   (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
   ;; copying
-  (global-set-key (kbd "C-c w") #'org-links-store-extended))
+  (global-set-key (kbd "C-c w") #'org-links-store-extended)
+  ;; opening
+  (global-set-key (kbd "C-c C-o") #'org-links-org-open-at-point-global))
 
-(require 'ol)
-(global-set-key (kbd "C-c C-o") #'org-open-at-point-global) ; optional
 ;; recommended:
 (setopt org-link-file-path-type 'absolute) ; create links with full path
 (setopt org-link-search-must-match-exact-headline nil) ; use fuzzy search of Org links

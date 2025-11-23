@@ -119,10 +119,17 @@
 ;;; - Code
 (require 'ol)
 
-(defvar org-links-threshold-search-link-optimization-max-file (* 30 1024 1024) ; 30MB, adjustable
-  "If lower we create copy of file in memory.
-If size of file larger than threshold we will process file line by line
-instead creating of copy.")
+(defcustom org-links-silent nil
+  "Don't spawn messages."
+  :type 'boolean
+  :group 'org-links)
+
+
+(defcustom org-links-threshold-search-link-optimization-max-file (* 50 1024 1024) ; 50MB, adjustable
+  "If file size is lower we create copy of file in memory.
+If size of file larger than threshold process file line by line instead."
+  :type 'integer
+  :group 'org-links)
 
 (defsubst org-links-string-full-match (regexp string)
   "Return t if REGEXP fully match STRING."
@@ -290,7 +297,8 @@ Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
           (t
            (concat "[[file:" (buffer-file-name (buffer-base-buffer)) "::" (number-to-string (line-number-at-pos)) "]]")))))
     (kill-new link)
-    (message  "%s\t- copied to clipboard" link)))
+    (unless org-links-silent
+      (message  "%s\t- copied to clipboard" link))))
 
 ;;; - help functions: unnormalize link
 
@@ -390,6 +398,8 @@ numbner."
     (if (eq (length re) 1) ;; found exactly one
         (car re)
       ;; else
+      (unless org-links-silent
+        (message "More than one line found, NUM is used."))
       nil)))
 
 

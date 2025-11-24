@@ -114,7 +114,8 @@
 ;;; TODO
 ;; - each file: link should be generated with some description. (for export)
 ;; - provide option FOR NUM::FUZZY: if several lines found jump to closes to NUM, not to exact NUM.
-
+;; - when at <<some>> generate special link without universal arg.
+;;
 ;;; Code:
 ;;; - Code
 (require 'ol)
@@ -169,8 +170,7 @@ ARG is universal argument, if non-nil"
         (let ((path (match-string 1 link-string))
               (desc (match-string 2 link-string)))
 
-          ;; (print (list path desc (org-links-create-link path desc)))
-         (org-links-create-link path desc))
+          (org-links-create-link path desc))
          ;; else - other types
          (org-links-create-link link-string))))
 
@@ -506,7 +506,6 @@ Argument ORIG-FUN is `org-open-file' that breaks at NUM-NUM,
 NUM-NUM::LINE, NUM::LINE formats.
 Use current buffer for search line.
 Optional argument ARGS is `org-open-file' arguments."
-  ;; (print (list "org-links-org-open-file-advice" args))
   (seq-let (path in-emacs string search) args
     (setq string string) ;; noqa: unused
     (if search ; part after ::

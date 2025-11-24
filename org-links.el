@@ -124,7 +124,6 @@
   :type 'boolean
   :group 'org-links)
 
-
 (defcustom org-links-threshold-search-link-optimization-max-file (* 50 1024 1024) ; 50MB, adjustable
   "If file size is lower we create copy of file in memory.
 If size of file larger than threshold process file line by line instead."
@@ -567,20 +566,39 @@ Optional argument ARGS is `org-open-file' arguments."
 ;; (advice-remove 'org-open-file #'org-links-org-open-file-advice)
 
 ;;; - Better `org-open-at-point-global' to open link from string
-(defun org-links-org-open-at-point-global ()
-  "Function with additional ask for link if not found.
-`org-open-at-point-global' function."
-  (interactive)
-  (condition-case nil
+(defun org-links-org-open-at-point-global (&optional arg)
+  "Enhancements for `org-open-at-point-global' function.
+- ask for link if not found.
+- if file not exist, raise error, not open empty file.
+If universal argument ARG is non-nil, then skip additionals."
+  (interactive "P")
+  (if arg
       (call-interactively #'org-open-at-point-global)
-    (user-error
-     (when kill-ring
-       (let ((link (read-buffer "link: " (when (string-match org-link-any-re (car kill-ring-yank-pointer))
-                                           (car kill-ring-yank-pointer)))))
-         (unless (string-empty-p link)
-           (with-temp-buffer
-             (insert link)
-             (call-interactively #'org-open-at-point-global))))))))
+    ;; else
+    ;; - raise error if check that file exist
+    (save-excursion
+      (save-match-data
+        (when (org-in-regexp org-link-any-re)
+          (goto-char (match-beginning 0))
+          (when-let* ((link (org-element-link-parser))
+                      (type (org-element-property :type link))
+	              (path (org-element-property :path link)))
+            (when (and (string= type "file")
+                       (not (file-readable-p path)))
+              (user-error "File does not exist"))))))
+
+    ;; - call with catching error
+    (condition-case nil
+        (call-interactively #'org-open-at-point-global)
+      ;; user-error: "No link found"
+      (user-error
+       (when kill-ring
+         (let ((link (read-buffer "link: " (when (string-match org-link-any-re (car kill-ring-yank-pointer))
+                                             (car kill-ring-yank-pointer)))))
+           (unless (string-empty-p link)
+             (with-temp-buffer
+               (insert link)
+               (call-interactively #'org-open-at-point-global)))))))))
 ;;; provide
 (provide 'org-links)
 

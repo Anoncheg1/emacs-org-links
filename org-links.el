@@ -474,10 +474,10 @@ LINK is plain link without []."
 	                   (match-string 1 link)))
 	        (line (match-string 2 link))) ; may be ""
       (if-let* ((n1 (and (not (string-empty-p line))
-                         (org-links--find-line line)))
+                         (org-links--find-line line))))
           (list n1 nil)
         ;; else
-        (list (string-to-number num1))))))))
+        (list (string-to-number num1)))))))
 
 ;; (org-links--get-target-position-for-link "1-2::asd")
 ;; (org-links--get-target-position-for-link "480::")

@@ -224,12 +224,15 @@ For usage with original Org `org-open-at-point-global' function."
                (if (bound-and-true-p buffer-file-name)
                    (if (not arg)
                        ;; store in PATH::NUM::LINE format
-                       (org-links-create-link (concat
-                                               "file:"
-                                               (buffer-file-name (buffer-base-buffer))
-                                               ;; (substring link 2 (- (length link) 2)) ; path
-                                               "::" (number-to-string (line-number-at-pos))
-                                               "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                       (let ((cur-line (org-links-org-link--normalize-string
+                                        (buffer-substring-no-properties (line-beginning-position)
+                                                                        (line-end-position)))))
+                         (org-links-create-link (concat
+                                                 "file:"
+                                                 (buffer-file-name (buffer-base-buffer))
+                                                 ;; (substring link 2 (- (length link) 2)) ; path
+                                                 "::" (number-to-string (line-number-at-pos))
+                                                 (if (string-empty-p cur-line) "" (concat "::" cur-line)))))
                      ;; else
                      (org-links-create-link (concat
                                              "file:"
@@ -242,12 +245,13 @@ For usage with original Org `org-open-at-point-global' function."
               (t
                (if (bound-and-true-p buffer-file-name)
                    (if (not arg)
-                       (org-links-create-link (concat
-                                               "file:"
-                                               (buffer-file-name (buffer-base-buffer))
-                                               ;; (substring link 2 (- (length link) 2))
-                                               "::" (number-to-string (line-number-at-pos))
-                                               "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                       (let ((cur-line (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                         (org-links-create-link (concat
+                                                 "file:"
+                                                 (buffer-file-name (buffer-base-buffer))
+                                                 ;; (substring link 2 (- (length link) 2))
+                                                 "::" (number-to-string (line-number-at-pos))
+                                                 (if (string-empty-p cur-line) "" (concat "::" cur-line)))))
                      ;; else - default
                      (org-links--create-org-default-at-point))
 
@@ -416,7 +420,7 @@ numbner."
 
 (defvar org-links-num-num-line-regexp "^\\([0-9]+\\)-\\([0-9]+\\)::\\(.*\\)$"
   "Links ::NUM-NUM::LINE.")
-(defvar org-links-num-line-regexp "^\\([0-9]+\\)::\\(.+\\)$"
+(defvar org-links-num-line-regexp "^\\([0-9]+\\)::\\(.?+\\)$"
   "Links ::NUM::LINE.")
 
 (defun org-links-num-num-enshure-num2-visible (num2)
@@ -468,14 +472,16 @@ LINK is plain link without []."
    ;; NUM::LINE
    ((when-let* ((num1 (and (string-match org-links-num-line-regexp link)
 	                   (match-string 1 link)))
-	        (line (match-string 2 link)))
-      (if-let* ((n1 (org-links--find-line line)))
+	        (line (match-string 2 link))) ; may be ""
+      (if-let* ((n1 (and (not (string-empty-p line))
+                         (org-links--find-line line)))
           (list n1 nil)
         ;; else
-        (list (string-to-number num1)))))))
+        (list (string-to-number num1))))))))
 
 ;; (org-links--get-target-position-for-link "1-2::asd")
-
+;; (org-links--get-target-position-for-link "480::")
+;; (progn (string-match org-links-num-line-regexp "480::") (match-string 2 "480::"))
 
 ;;;###autoload
 (defun org-links-additional-formats (link)
@@ -485,6 +491,7 @@ Called from `org-link-search', which always called for link targets in
 current buffer.
 LINK is string after :: or was just in [[]].
 `org-execute-file-search-in-bibtex' as example."
+  (print (list link (org-links--local-get-target-position-for-link link)))
   ;; 1) get line numbers for link
   (if-let ((nums (org-links--local-get-target-position-for-link link)))
       (let ((num1 (car nums))

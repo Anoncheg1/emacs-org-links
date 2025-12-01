@@ -1,4 +1,4 @@
-;;; org-links.el --- Better manage line numbers in your org-mode links -*- lexical-binding: t -*-
+;;; org-links.el --- Better manage line numbers in links of Org mode -*- lexical-binding: t -*-
 
 ;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
 ;; Keywords: org, text, hypermedia, url
@@ -6,12 +6,8 @@
 ;; Version: 0.2
 ;; Created: 30 Aug 2025
 ;; Package-Requires: ((emacs "27.1"))
-;;   > (Emacs 26+) for negative regex
-;;   (compat "30.")
-;;   "27.1" for ol.el
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; Copyright (c) 2025 github.com/Anoncheg1,codeberg.org/Anoncheg
-
 
 ;;; License
 

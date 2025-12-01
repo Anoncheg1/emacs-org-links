@@ -13,10 +13,10 @@
 
 ;; This file is not part of GNU Emacs.
 
-;; This program is free software: you can redistribute it and/or modify
-;; it under the terms of the GNU Affero General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
+;; This program is free software: you can redistribute it and/or
+;; modify it under the terms of the GNU Affero General Public License
+;; as published by the Free Software Foundation, either version 3 of
+;; the License, or (at your option) any later version.
 
 ;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -93,10 +93,10 @@
 ;; Other packages:
 ;; - Modern navigation in major modes https://github.com/Anoncheg1/firstly-search
 ;; - Search with Mandarin Chinese pinying https://github.com/Anoncheg1/pinyin-isearch
-;; - Ediff fix				https://github.com/Anoncheg1/ediffnw
-;; - Dired history			https://github.com/Anoncheg1/dired-hist
-;; - Mark selected window with contrast https://github.com/Anoncheg1/selected-window-contrast
-;; - Org hyperlinks enhanced		https://github.com/Anoncheg1/org-links
+;; - Ediff fix			https://github.com/Anoncheg1/ediffnw
+;; - Dired history		https://github.com/Anoncheg1/dired-hist
+;; - Mark window with contrast https://github.com/Anoncheg1/selected-window-contrast
+;; - Org hyperlinks enhanced	https://github.com/Anoncheg1/org-links
 ;; - Solution for "callback hell"	 https://github.com/Anoncheg1/emacs-async1
 ;; - Call LLMs & AIfrom Org-mode block.  https://github.com/Anoncheg1/emacs-oai
 

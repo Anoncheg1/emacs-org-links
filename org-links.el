@@ -40,7 +40,7 @@
 ;;  following syntax:
 ;; [[PATH::NUM][Link description]]
 ;; [[PATH::LINE][Link description]]
-;;
+
 ;; This package (org-links) The syntax above is extended with
 ;;  following formats and facilities provided to help create and
 ;;  manage them all.
@@ -48,8 +48,8 @@
 ;; - [[PATH::NUM-NUM::LINE]]
 ;; - [[PATH::NUM-NUM]]
 
-;; For ex. `[[file:./notes/warehouse.el::23::(defun alina (pic))]]`
-;;
+;; For ex.  `[[file:./notes/warehouse.el::23::(defun alina (pic))]]`
+
 ;; Also provided:
 ;; 1) The command `org-links-store-extended' copies a link to the
 ;;    current file, at the current point.
@@ -74,7 +74,6 @@
 
 ;; You may advanced configuration in README.md file.
 
-;;; Additioan information.
 ;; *Features provided*:
 ;; - respect org-link-context-for-files, if not set store only number.
 ;; - correctly store file in image-dired-thumbnail-mode
@@ -103,24 +102,26 @@
 ;; - Mark selected window with contrast https://github.com/Anoncheg1/selected-window-contrast
 ;; - Org hyperlinks enhanced		https://github.com/Anoncheg1/org-links
 ;; - Solution for "callback hell"	 https://github.com/Anoncheg1/emacs-async1
-;; - Call LLMs & AIfrom Org-mode block. https://github.com/Anoncheg1/emacs-oai
+;; - Call LLMs & AIfrom Org-mode block.  https://github.com/Anoncheg1/emacs-oai
 
-;; *DONATE MONEY*:
-;; You can sponsor author directly with crypto currencies:
+;; *DONATE MONEY* to sponsor author directly with crypto currencies:
 ;; - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
 ;; - USDT (Tether) address: TVoXfYMkVYLnQZV3mGZ6GvmumuBfGsZzsN
 ;; - TON (Telegram) address: UQC8rjJFCHQkfdp7KmCkTZCb5dGzLFYe2TzsiZpfsnyTFt9D
 
-;;; TODO
+;;; TODO:
 ;; - each file: link should be generated with some description. (for export)
 ;; - provide option FOR NUM::FUZZY: if several lines found jump to
 ;;   closes to NUM, not to exact NUM.
 ;; - when at <<some>> generate special link without universal arg.
-;;
-;;; Code:
-;; -=  Code
+
+;; -=  includes
 (require 'ol)
 (require 'org-element)
+
+
+;;; Code:
+;; -=  Code
 
 (defcustom org-links-silent nil
   "Don't spawn messages."

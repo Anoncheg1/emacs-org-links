@@ -41,6 +41,10 @@ jobs:
               echo "Warnings detected, failing workflow"
               exit 1
             fi
+            if grep -q ': error: ' output.log ; then
+              echo "Error detected, failing workflow"
+              exit 1
+            fi
           else
             echo "Make command failed, failing workflow"
             exit 1

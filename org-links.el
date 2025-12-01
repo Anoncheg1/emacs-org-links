@@ -96,14 +96,14 @@
 ;;  default in Org mode.)  and `org-open-at-point-global'.
 
 ;; Other packages:
-;; - Navigation in Dired, Packages, Buffers modes https://github.com/Anoncheg1/firstly-search
-;; - Search with Mandarin Chinese pinying	https://github.com/Anoncheg1/pinyin-isearch
-;; - Ediff fix					https://github.com/Anoncheg1/ediffnw
-;; - Dired history				https://github.com/Anoncheg1/dired-hist
-;; - Mark selected window with contrast	https://github.com/Anoncheg1/selected-window-contrast
-;; - Org hyperlinks enhanced			https://github.com/Anoncheg1/org-links
-;; - Solution for "callback hell"		https://github.com/Anoncheg1/emacs-async1
-;; - Call LLMs and AI agents from Org-mode ai block. https://github.com/Anoncheg1/emacs-oai
+;; - Modern navigation in major modes https://github.com/Anoncheg1/firstly-search
+;; - Search with Mandarin Chinese pinying https://github.com/Anoncheg1/pinyin-isearch
+;; - Ediff fix				https://github.com/Anoncheg1/ediffnw
+;; - Dired history			https://github.com/Anoncheg1/dired-hist
+;; - Mark selected window with contrast https://github.com/Anoncheg1/selected-window-contrast
+;; - Org hyperlinks enhanced		https://github.com/Anoncheg1/org-links
+;; - Solution for "callback hell"	 https://github.com/Anoncheg1/emacs-async1
+;; - Call LLMs & AIfrom Org-mode block. https://github.com/Anoncheg1/emacs-oai
 
 ;; *DONATE MONEY*:
 ;; You can sponsor author directly with crypto currencies:
@@ -113,7 +113,8 @@
 
 ;;; TODO
 ;; - each file: link should be generated with some description. (for export)
-;; - provide option FOR NUM::FUZZY: if several lines found jump to closes to NUM, not to exact NUM.
+;; - provide option FOR NUM::FUZZY: if several lines found jump to
+;;   closes to NUM, not to exact NUM.
 ;; - when at <<some>> generate special link without universal arg.
 ;;
 ;;; Code:

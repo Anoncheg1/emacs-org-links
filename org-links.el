@@ -82,7 +82,7 @@
 
 ;; I recommend to set those Org ol.el options for clarity:
 ;; (setopt org-link-file-path-type 'absolute) ; create links with full path
-;; (setopt org-link-search-must-match-exact-headline nil) ; use fuzzy search of Org links
+;; (setopt org-link-search-must-match-exact-headline nil) ; fuzzy search
 ;; (setopt org-link-descriptive nil) ; show links in raw, don't hide
 
 ;; *How this works*:
@@ -118,7 +118,7 @@
 ;; - when at <<some>> generate special link without universal arg.
 ;;
 ;;; Code:
-;;; - Code
+;; -=  Code
 (require 'ol)
 (require 'org-element)
 
@@ -152,7 +152,7 @@ DESCRIPTION not used."
 ;; (if (not (string-equal (org-links-create-link "file:.././string") "[[file:~/sources/string]]"))
 ;;     (error "Org-links"))
 
-;;; - Copy to clipboard
+;; -=  Copy to clipboard
 (defun org-links--create-simple-at-point (arg)
   "Link builder for Fundamental mode.
 ARG is universal argument, if non-nil"
@@ -262,7 +262,7 @@ For usage with original Org `org-open-at-point-global' function."
     (kill-new link)
     (princ link)))
 
-;;; - Fallback "Save to clipboard" without requirement of org-links
+;; -=  Fallback "Save to clipboard" without requirement of org-links
 
 (defun org-links-store-link-fallback (&optional arg)
   "Copy Org-mode link to kill ring and clipboard from any mode.
@@ -305,7 +305,7 @@ Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
     (unless org-links-silent
       (message  "%s\t- copied to clipboard" link))))
 
-;;; - help functions: unnormalize link
+;; -=  help functions: unnormalize link
 
 (defun org-links-org-link--normalize-string (string &optional context)
   "Compact spaces and trim leading to make link more compact.
@@ -346,7 +346,7 @@ To create proper regex, string should be first be processed with
                 string))
     (error "Assert failed")))
 
-;;; - find LINE
+;; -=  find LINE
 (defun org-links--line-number-at-string-pos (string pos)
   "Return the line number at position POS in STRING."
   (1+ (cl-count ?\n (substring string 0 pos))))
@@ -408,7 +408,7 @@ numbner."
       nil)))
 
 
-;;; - Open link - help functions and variablses
+;; -=  Open link - help functions and variablses
 
 (defvar org-links-num-num-regexp "^\\([0-9]+\\)-\\([0-9]+\\)$"
   "Links ::NUM-NUM.")
@@ -445,7 +445,7 @@ Recenter screen and Two times check visibility."
         (when (eq (window-buffer) (current-buffer)) ; if showed
           (recenter 1))))))
 
-;;; - Open link - for [[PATH::NUM-NUM]] - org-execute-file-search-functions
+;; -=  Open link - for [[PATH::NUM-NUM]] - org-execute-file-search-functions
 ;; +  advice
 
 (defun org-links--local-get-target-position-for-link (link)
@@ -507,7 +507,7 @@ LINK is string after :: or was just in [[]].
 
 ;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
 ;; (remove-hook 'org-execute-file-search-functions #'org-links-additional-formats)
-;;; - Approach 1) org-open-file advice - based on fuzzy links. Fix probles caused by org-open-file.
+;; -=  Approach 1) org-open-file advice - based on fuzzy links. Fix probles caused by org-open-file.
 ;;;###autoload
 (defun org-links-org-open-file-advice (orig-fun &rest args)
   "Support for additional formats.
@@ -574,7 +574,7 @@ Optional argument ARGS is `org-open-file' arguments."
 ;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
 ;; (advice-remove 'org-open-file #'org-links-org-open-file-advice)
 
-;;; - Better `org-open-at-point-global' to open link from string
+;; -=  Better `org-open-at-point-global' to open link from string
 (defun org-links-org-open-at-point-global (&optional arg)
   "Enhancements for `org-open-at-point-global' function.
 - ask for link if not found.

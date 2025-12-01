@@ -119,6 +119,7 @@
 ;;; Code:
 ;;; - Code
 (require 'ol)
+(require 'org-element)
 
 (defcustom org-links-silent nil
   "Don't spawn messages."

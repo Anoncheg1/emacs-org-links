@@ -543,9 +543,10 @@ Optional argument ARGS is `org-open-file' arguments."
          ;; NUM::LINE
          ((when-let* ((num1 (and (string-match org-links-num-line-regexp search)
 	                         (match-string 1 search)))
-	              (line (match-string 2 search)))
+	              (line (match-string 2 search))) ; may be ""
             (apply orig-fun (list path 'emacs)) ; in emacs
-            (if-let ((line-position (org-links--find-line line)))
+            (if-let ((line-position (and (not (string-empty-p line))
+                                         (org-links--find-line line))))
                 (org-goto-line line-position)
               ;; else
               (org-goto-line (string-to-number num1)))

@@ -83,6 +83,7 @@
                                   (set-major-mode 'image-dired-image-mode)
                                   (cl-letf (((symbol-function 'buffer-base-buffer) (lambda (&optional _buf) (current-buffer))))
                                     (org-links-store-link-fallback nil)
+                                    ;; (print (car kill-ring)))))))
                                     (should (equal (car kill-ring) "[[file:/bar/image.jpg]]")))))))))
 
 
@@ -298,7 +299,7 @@
        (setq buffer-file-name "/mock/org.org")
        (insert "some-text above\n")
        (insert "* headline")
-       (org-links-store-extended nil)
+       (org-links-store-extended 1)
        (forward-line -1)
        (insert "some-text above2\n")
        (forward-line 1)
@@ -307,18 +308,21 @@
        ;; (xref-push-marker-stack)
        (setq buffer-read-only t)
        (with-temp-buffer
-         ;; (print (car kill-ring))
-         (insert (car kill-ring)) ; [[file:/mock/org.org::2::* headline]]
+         ;; (print (car kill-ring))))))
+         (insert (car kill-ring))      ; [[file:/mock/org.org::2::* headline]]
          ;; (print (list "org-execute-file-search-functions" org-execute-file-search-functions))
          ;; (setq buffer-read-only t)
          (read-only-mode 1)
          (org-open-at-point-global)
+         ;; (print (list (point) (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+         ;; ))))
          (should (string-equal "* headline" (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
          ;; (xref-go-back) ;; (xref-go-back)
          ;; (xref-go-forward)
          (set-buffer-modified-p nil))
        (setq kill-ring nil)
        (set-buffer-modified-p nil)))))
+
 ;;; - store link
 ;; Mocking necessary dependencies
 (defmacro with-mocks (&rest body)
@@ -399,8 +403,11 @@
       (setq kill-ring nil)
       (goto-char (point-min))
       (org-links-store-extended nil)
-      ;; (print (car kill-ring))
-      (should (string= (car kill-ring) "[[file:/mock/org.org::1::* headline]]"))
+      ;; (print (car kill-ring))))
+      ;; "[[* headline]]"
+      (should (string= (car kill-ring) "[[* headline]]"))
+      (org-links-store-extended 1)
+      (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]"))
       (set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-org-mode-arg-test ()

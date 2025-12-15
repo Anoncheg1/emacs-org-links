@@ -152,7 +152,8 @@ DESCRIPTION not used."
 ;; -=  Copy to clipboard
 (defun org-links--create-simple-at-point (arg)
   "Link builder for Fundamental mode.
-ARG is universal argument, if non-nil"
+ARG is universal argument, if non-nil.
+Bad handling of [ character, such links should be avoided."
   (if arg
       ;; else - just LINE - will work if `org-link-search-must-match-exact-headline' is nil
       (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
@@ -240,6 +241,16 @@ For usage with original Org `org-open-at-point-global' function."
                                              "::" (number-to-string (line-number-at-pos)))))
                  ;; else - *scratch* buffer
                  (org-links-create-link (org-links--create-simple-at-point arg))))
+              ;; - at header in Org mode
+              ((and (derived-mode-p 'org-mode)
+                    (org-at-heading-p)
+                    (not arg))
+                   (org-link-make-string (org-links-org-link--normalize-string
+                                          (buffer-substring-no-properties (line-beginning-position)
+                                                                          (line-end-position)))))
+              ((and (derived-mode-p 'org-mode)
+                    arg)
+               (substring-no-properties (org-store-link nil)))
               ;; - PATH::NUM::LINE -  all modes
               (t
                (if (bound-and-true-p buffer-file-name)
@@ -278,7 +289,7 @@ Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
 
           ((or (derived-mode-p (intern "image-dired-image-mode"))
                (derived-mode-p (intern "image-mode")))
-           (concat "file:" (buffer-file-name (buffer-base-buffer))))
+           (concat "[[file:" (buffer-file-name (buffer-base-buffer)) "]]"))
 
           ((not (buffer-file-name (buffer-base-buffer))) ; buffer with no file
            (concat "[[file:::" (number-to-string (line-number-at-pos)) "]]"))

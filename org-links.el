@@ -563,11 +563,12 @@ LINK is plain link without []."
 ;;;###autoload
 (defun org-links-fix-open-target-not-org (link-content)
   "Implementation of hook `org-open-link-functions'.
+LINK-CONTENT is a string of link without open and close square brackets.
 Fix for case for not Org mode to find <<target1>> links.
-Execution path that cause error: org-link-open-from-string ->
-org-link-open (hook here) -> org-link-search (cause error).
-Hook requirement: When the function does handle the link, it must return a non-nil value.
-Don't called for file: link type."
+Execution path that cause error: `org-link-open-from-string' ->
+`org-link-open' (hook here) -> `org-link-search' (cause error).
+Hook requirement: When the function does handle the link, it must return
+a non-nil value.  Don't called for file: type of links."
   (if (and (not (derived-mode-p 'org-mode))
            (not current-prefix-arg))
       (progn (when-let ((pos (org-links--find-target link-content)))

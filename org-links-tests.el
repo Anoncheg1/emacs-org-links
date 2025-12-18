@@ -38,6 +38,8 @@
 ;; Running Tests: Load the test file and run:
 ;; (eval-buffer)
 ;; (ert t)
+;; or
+;; $ emacs -Q --batch -l ert.el -l org-links.el -l org-links-tests.el -f ert-run-tests-batch-and-exit
 ;; to execute all tests. Individual tests can be run with (ert 'test-name).
 
 
@@ -268,7 +270,7 @@
     ;; Find only first match
     (should (equal (org-links-find-first-two-exact-lines-in-buffer-optimized "^banana$" nil 1) '(2)))
     ;; Get buffer positions of matches
-    (should (equal  (org-links-find-first-two-exact-lines-in-buffer-optimized "^banana$" t 2)'(6 13)))
+    (should (equal (org-links-find-first-two-exact-lines-in-buffer-optimized "^banana$" t 2)'(7 14)))
     ;; No match
     (should (equal (org-links-find-first-two-exact-lines-in-buffer-optimized "^pear$") '()))
     ))
@@ -405,7 +407,7 @@
       (org-links-store-extended nil)
       ;; (print (car kill-ring))))
       ;; "[[* headline]]"
-      (should (string= (car kill-ring) "[[* headline]]"))
+      (should (string= (car kill-ring) "[[*headline]]"))
       (org-links-store-extended 1)
       (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]"))
       (set-buffer-modified-p nil))))

@@ -68,6 +68,7 @@ If installing from a GitHub repo (not yet in MELPA), specify the source:
 (require 'org-links)
 ;; opening for C-c C-o
 (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
+(add-hook 'org-open-link-functions #'org-links-fix-open-target-not-org)
 (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
 ;; copying
 (global-set-key (kbd "C-c w") #'org-links-store-extended)

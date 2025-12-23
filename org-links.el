@@ -111,14 +111,12 @@
 ;; - provide option FOR NUM::FUZZY: if several lines found jump to
 ;;   closes to NUM, not to exact NUM.
 ;; - when at <<some>> generate special link without universal arg.
-
+;;; Code:
 ;; -=  includes
 (require 'ol)
 (require 'org-element)
 
-
-;;; Code:
-;; -=  Code
+;; -=  variables
 
 (defcustom org-links-silent nil
   "Don't spawn messages."
@@ -131,6 +129,9 @@ If size of file larger than threshold process file line by line instead."
   :type 'integer
   :group 'org-links)
 
+(defvar org-links--debug-flag nil)
+
+;; -=  functions
 (defsubst org-links-string-full-match (regexp string)
   "Return t if REGEXP fully match STRING."
   (and (string-match regexp string)
@@ -163,7 +164,7 @@ DESCRIPTION not used."
 ;; (if (not (string-equal (org-links-create-link "file:.././string") "[[file:~/sources/string]]"))
 ;;     (error "Org-links"))
 
-;; -=  Copy to clipboard - funcs
+;; -=  functions: Copy to clipboard
 (defun org-links--create-simple-at-point (arg)
   "Link builder for Fundamental mode.
 ARG is universal argument, if non-nil.
@@ -260,9 +261,10 @@ For usage with original Org `org-open-at-point-global' function."
                                (when (not arg)
                                  (concat "::"
                                          ;; get first line
-                                         (buffer-substring-no-properties
-                                          (line-beginning-position)
-                                          (line-end-position))))
+                                         (org-links-org-link--normalize-string
+                                          (buffer-substring-no-properties
+                                           (line-beginning-position)
+                                           (line-end-position)))))
                                "]]")
                        ))
               (deactivate-mark)))
@@ -391,12 +393,14 @@ Instead of much of removal we only compact spaces and remove leading.
 Instead of removing [1/3], [50%], leading ( and trailing ), spaces at
 the end of STRING, we just compress spaces in line and remove leading
 spaces from STRING.  CONTEXT ignored."
-  (setq context context) ;; noqa: unused
-  (string-trim
-   (replace-regexp-in-string
-    (rx (one-or-more (any " \t")))
-    " "
-    string) "[ \t\n\r]+"))
+  (ignore context) ;; noqa: unused
+  (replace-regexp-in-string
+   (rx (one-or-more (any " \t")))
+   " "
+   (string-trim
+    (org-link-escape
+     string))
+   "[ \t\n\r]+"))
 
 (defun org-links-org--unnormalize-string (string)
   "Create regex matching STRING with arbitrary whitespace.
@@ -405,7 +409,7 @@ Add spaces at begin of line and replace spaces with any number of spaces
 or tabs in the middle.
 To create proper regex, string should be first be processed with
 `regexp-quote'."
-  (concat "[ \t]*" (replace-regexp-in-string " " "[ \t]+" string) "[ \t]*"))
+  (concat "[ \t]*" (replace-regexp-in-string " " "[ \t]+" (string-trim string)) "[ \t]*"))
 
 
 ;; small tests:
@@ -475,8 +479,12 @@ match otherwisde line numbers."
   "Return line number that match LINK-ORG-STRING in buffer or nil.
 If GET-POSITION is non-nil, then return position instead of line
 numbner."
-  (let* ((link (concat "^" (org-links-org--unnormalize-string (regexp-quote link-org-string)) "$"))
-         (re (org-links-find-first-two-exact-lines-in-buffer-optimized link get-position)))
+  (print (format "org-links--find-line1 %s" link-org-string))
+  (let ((link (concat "^" (org-links-org--unnormalize-string (regexp-quote link-org-string)) "$"))
+        re)
+    (print (format "org-links--find-line2 %s" link))
+    (setq re (org-links-find-first-two-exact-lines-in-buffer-optimized link get-position))
+    (print (format "org-links--find-line3 %s" re))
     (if (eq (length re) 1) ;; found exactly one
         (car re)
       ;; else
@@ -542,6 +550,7 @@ Recenter screen and Two times check visibility."
   "For LINK string return (line-num-beg line-num-end) or (line-num-beg) or nil.
 Use current buffer for search line.
 LINK is plain link without []."
+  (print (format "org-links--local-get-target-position-for-link %s" link))
   (cond
    ;; NUM-NUM
    ((when-let* ((num1 (and (string-match org-links-num-num-regexp link)

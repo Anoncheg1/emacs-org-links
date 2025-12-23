@@ -479,12 +479,15 @@ match otherwisde line numbers."
   "Return line number that match LINK-ORG-STRING in buffer or nil.
 If GET-POSITION is non-nil, then return position instead of line
 numbner."
-  (print (format "org-links--find-line1 %s" link-org-string))
+  (when org-links--debug-flag
+    (print (format "org-links--find-line1 %s" link-org-string)))
   (let ((link (concat "^" (org-links-org--unnormalize-string (regexp-quote link-org-string)) "$"))
         re)
-    (print (format "org-links--find-line2 %s" link))
+    (when org-links--debug-flag
+      (print (format "org-links--find-line2 %s" link)))
     (setq re (org-links-find-first-two-exact-lines-in-buffer-optimized link get-position))
-    (print (format "org-links--find-line3 %s" re))
+    (when org-links--debug-flag
+      (print (format "org-links--find-line3 %s" re)))
     (if (eq (length re) 1) ;; found exactly one
         (car re)
       ;; else
@@ -550,7 +553,8 @@ Recenter screen and Two times check visibility."
   "For LINK string return (line-num-beg line-num-end) or (line-num-beg) or nil.
 Use current buffer for search line.
 LINK is plain link without []."
-  (print (format "org-links--local-get-target-position-for-link %s" link))
+  (when org-links--debug-flag
+    (print (format "org-links--local-get-target-position-for-link %s" link)))
   (cond
    ;; NUM-NUM
    ((when-let* ((num1 (and (string-match org-links-num-num-regexp link)

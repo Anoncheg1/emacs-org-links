@@ -236,20 +236,35 @@ For usage with original Org `org-open-at-point-global' function."
                                 (with-current-buffer (Buffer-menu-buffer t)
                                   default-directory))))
            ;; - Any mode - region
-           ;; - format: NUM-NUM
+           ;; - format: NUM-NUM::LINE
+           ;; - format: NUM-NUM - with argument
            ((use-region-p)
-            (prog1 (let ((path (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer))))))
-                     (concat (substring path 0 (- (length path) 2)) "::"
-                             (number-to-string (line-number-at-pos (region-beginning))) "-" (number-to-string (line-number-at-pos (region-end)))
-                             (when arg
-                               (save-excursion
-                                 (concat "::" (org-links-org-link--normalize-string
-                                               (save-excursion
-                                                 (goto-char (region-beginning))
-                                                 (buffer-substring-no-properties
-                                                  (line-beginning-position)
-                                                  (line-end-position)))))))
-                             "]]"))
+            (prog1 (let ((path (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer)))))
+                         (r-end (region-end)))
+                     ;; Skip empty lines and comments
+                     (save-excursion
+                       (when (not arg)
+                         (let ((r-end (region-end)))
+                           (goto-char (region-beginning))
+                           ;; Skip empty lines
+                           (beginning-of-line)
+                           (re-search-forward "[^ \t\n]" r-end t)
+                           ;; skip comments
+                           (when (derived-mode-p 'prog-mode)
+                             (while (comment-only-p (line-beginning-position) (line-end-position))
+                               (forward-line)
+                               (re-search-forward "[^ \t\n]" r-end t)))))
+                       ;; make link
+                       (concat (substring path 0 (- (length path) 2)) "::"
+                               (number-to-string (line-number-at-pos (line-beginning-position))) "-" (number-to-string (line-number-at-pos r-end))
+                               (when (not arg)
+                                 (concat "::"
+                                         ;; get first line
+                                         (buffer-substring-no-properties
+                                          (line-beginning-position)
+                                          (line-end-position))))
+                               "]]")
+                       ))
               (deactivate-mark)))
 
            ;; all modes - for cursor at <<target>>

@@ -147,14 +147,15 @@
 ;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
 ;; ;; copying
 ;; (global-set-key (kbd "C-c w") #'org-links-store-extended)
+;; (member 'org-links-additional-formats org-execute-file-search-functions)
 (defmacro with-org-link-config (&rest body)
   `(let ((org-execute-file-search-functions
           (cons #'org-links-additional-formats
                 org-execute-file-search-functions)))
      (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
      (unwind-protect
-         ,@body
-       (advice-remove 'org-open-file #'org-links-org-open-file-advice))))
+         (prog1 ,@body
+           (advice-remove 'org-open-file #'org-links-org-open-file-advice)))))
 ;;; - org-links-create-link
 (ert-deftest org-links-tests-create-link ()
   (if (file-exists-p "~/sources/") ; local
@@ -357,21 +358,6 @@
      (org-links-store-extended nil)
      (should (string= (car kill-ring) "file:/mock/image.png"))(set-buffer-modified-p nil))))
 
-(ert-deftest org-links-store-extended-region-test ()
-  (let ((kill-buffer-query-functions))
-    (with-temp-buffer
-      (with-org-link-config
-       (setq major-mode 'text-mode)
-       (setq buffer-file-name "/mock/test.txt")
-       (insert "foo\nbar\nbaz\nqux")
-       (set-mark (point-min))
-       (goto-char (point-max))
-       (setq kill-ring nil)
-       (org-links-store-extended nil)
-       (should (string-match-p
-                "[[file:/mock/test.txt::1-4]]" (car kill-ring))))
-      (set-buffer-modified-p nil))))
-
 (ert-deftest org-links-store-extended-prog-mode--no-arg-test ()
   (let ((kill-buffer-query-functions))
     (with-temp-buffer
@@ -381,7 +367,7 @@
       (setq kill-ring nil)
       (goto-char (point-min))
       (org-links-store-extended 1)
-      (should (string-match-p "\\[\\[file:/mock/code.el::1\\]\\]" (car kill-ring)))
+      (should (string-match-p (regexp-quote "[[file:/mock/code.el::1]]") (car kill-ring)))
       (set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-prog-mode-arg-test ()
@@ -424,6 +410,56 @@
       ;; (print (car kill-ring))
       (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]"))
       (set-buffer-modified-p nil))))
+;;; - store link - region - skip comments and empty lines
+
+(ert-deftest org-links-store-extended-region-normal ()
+  (let ((kill-buffer-query-functions))
+    (with-temp-buffer
+      (with-org-link-config
+       (setq major-mode 'text-mode)
+       (setq buffer-file-name "/mock/test.txt")
+       (insert "foo\nbar\nbaz\nqux")
+       (set-mark (point-min))
+       (goto-char (point-max))
+       (set-buffer-modified-p nil)
+       (setq kill-ring nil)
+       (org-links-store-extended nil)
+       (should (string-match-p (regexp-quote "[[file:/mock/test.txt::1-4::foo]]")
+                               (car kill-ring)))))))
+
+(ert-deftest org-links-store-extended-region-empty-line ()
+ (let ((kill-buffer-query-functions))
+  (with-temp-buffer
+      (with-org-link-config
+         (setq major-mode 'text-mode)
+         (setq buffer-file-name "/mock/test.txt")
+         (insert "\n\nfoo\nbar\nbaz\nqux")
+         (set-mark (point-min))
+         (goto-char (point-max))
+         (set-buffer-modified-p nil)
+         (setq kill-ring nil)
+         (org-links-store-extended nil)
+         (should (string-match-p
+                  (regexp-quote "[[file:/mock/test.txt::3-6::foo]]")
+                  (car kill-ring)))))))
+
+(ert-deftest org-links-store-extended-region-programming-mode ()
+ (let ((kill-buffer-query-functions))
+  (with-temp-buffer
+      (with-org-link-config
+         (python-mode)
+         (setq buffer-file-name "/mock/test.txt")
+         (insert "\n\n#nothin\n# never\nfoo\nbar\nbaz\nqux")
+         (set-mark (point-min))
+         (goto-char (point-max))
+         (set-buffer-modified-p nil)
+         (setq kill-ring nil)
+         (org-links-store-extended nil)
+         (should (string-match-p
+                  (regexp-quote "[[file:/mock/test.txt::5-8::foo]]")
+                  (car kill-ring)))))))
+
+
 ;;; provide
 (provide 'org-links-tests)
 

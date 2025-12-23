@@ -40,6 +40,7 @@
 ;; (ert t)
 ;; or
 ;; $ emacs -Q --batch -l ert.el -l org-links.el -l org-links-tests.el -f ert-run-tests-batch-and-exit
+;; $ emacs -Q --batch -l ert.el -l org-links.el -l org-links-tests.el  -eval '(ert-run-tests-batch-and-exit "org-links-store-extended-region-empty-line")'
 ;; to execute all tests. Individual tests can be run with (ert 'test-name).
 
 
@@ -418,11 +419,12 @@
       (with-org-link-config
        (setq major-mode 'text-mode)
        (setq buffer-file-name "/mock/test.txt")
+       (transient-mark-mode t)
        (insert "foo\nbar\nbaz\nqux")
-       (set-mark (point-min))
-       (goto-char (point-max))
        (set-buffer-modified-p nil)
        (setq kill-ring nil)
+       (set-mark (point-min))
+       (goto-char (point-max))
        (org-links-store-extended nil)
        (should (string-match-p (regexp-quote "[[file:/mock/test.txt::1-4::foo]]")
                                (car kill-ring)))))))
@@ -434,10 +436,10 @@
          (setq major-mode 'text-mode)
          (setq buffer-file-name "/mock/test.txt")
          (insert "\n\nfoo\nbar\nbaz\nqux")
-         (set-mark (point-min))
-         (goto-char (point-max))
-         (set-buffer-modified-p nil)
-         (setq kill-ring nil)
+         (transient-mark-mode t)
+         (goto-char (point-min))
+         (set-mark (point-max))
+         (print (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
          (org-links-store-extended nil)
          (should (string-match-p
                   (regexp-quote "[[file:/mock/test.txt::3-6::foo]]")

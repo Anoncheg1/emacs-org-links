@@ -75,6 +75,7 @@
 ;; - respect org-link-context-for-files, if not set store only number.
 ;; - correctly store file in image-dired-thumbnail-mode
 ;; - Add support for image-dired-thumbnail-mode and image-dired-image-mode
+;; - fuzzy search by the begining of ::LINE, not full match
 
 ;; I recommend to set those Org ol.el options for clarity:
 ;; (setopt org-link-file-path-type 'absolute) ; create links with full path
@@ -129,6 +130,16 @@ If size of file larger than threshold process file line by line instead."
   :type 'integer
   :group 'org-links)
 
+(defcustom org-links-find-exact-flag nil
+  "Non-nil means we search lines that exact match ::LINE.
+Oterwise, by default, we search for lines that begin with ::LINE.
+Used in `org-links--find-line'.
+Search ignore first empty first characters in all case."
+  :type 'boolean
+  :group 'org-links)
+
+
+[[file:~/sources/emacs-org-links/org-links.el::478::(defun org-links--find-line (link-org-string &optional get-position)]]
 (defvar org-links--debug-flag nil)
 
 ;; -=  functions
@@ -481,7 +492,9 @@ If GET-POSITION is non-nil, then return position instead of line
 numbner."
   (when org-links--debug-flag
     (print (format "org-links--find-line1 %s" link-org-string)))
-  (let ((link (concat "^" (org-links-org--unnormalize-string (regexp-quote link-org-string)) "$"))
+  (let ((link (concat "^"
+                      (org-links-org--unnormalize-string (regexp-quote link-org-string))
+                      (when org-links-find-exact-flag "$")))
         re)
     (when org-links--debug-flag
       (print (format "org-links--find-line2 %s" link)))

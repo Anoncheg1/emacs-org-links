@@ -33,9 +33,10 @@ First, we search for LINE, if not found we use NUM line number.
 LLMs and fuzzy search will be more effective with additional information, if you want link that point to block of code you will need a range of line numbers
 
 This is the solution to some Org links problems:
-- links sotred without number
+- links stored without number
 - targets in Org mode: stored same as a lines
 - opening links with fuzzy search will match any first line with fuzzy substrings, not full line match, (org-link-search-must-match-exact-headline = nil required).
+- fuzzy always match full line exactly (we search for first lines that begins with link)
 
 ## How?
 ### Installation - from MELPA

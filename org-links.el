@@ -138,8 +138,6 @@ Search ignore first empty first characters in all case."
   :type 'boolean
   :group 'org-links)
 
-
-[[file:~/sources/emacs-org-links/org-links.el::478::(defun org-links--find-line (link-org-string &optional get-position)]]
 (defvar org-links--debug-flag nil)
 
 ;; -=  functions

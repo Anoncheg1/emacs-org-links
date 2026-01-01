@@ -249,7 +249,13 @@ For usage with original Org `org-open-at-point-global' function."
            ;; - format: NUM-NUM::LINE
            ;; - format: NUM-NUM - with argument
            ((use-region-p)
-            (prog1 (let ((path (org-links-create-link (concat "file:" (buffer-file-name (buffer-base-buffer)))))
+            (prog1 (let ((path (org-links-create-link (concat
+                                                       (if (not arg)
+                                                           ;; one level upper - shorter
+                                                           (file-relative-name (buffer-file-name (buffer-base-buffer))
+                                                                               (file-name-directory (directory-file-name default-directory)))
+                                                         ;; else - longer
+                                                         (buffer-file-name (buffer-base-buffer))))))
                          (r-end (region-end)))
                      ;; Skip empty lines and comments
                      (save-excursion
@@ -274,8 +280,7 @@ For usage with original Org `org-open-at-point-global' function."
                                           (buffer-substring-no-properties
                                            (line-beginning-position)
                                            (line-end-position)))))
-                               "]]")
-                       ))
+                               "]]")))
               (deactivate-mark)))
 
            ;; all modes - for cursor at <<target>>
@@ -296,23 +301,24 @@ For usage with original Org `org-open-at-point-global' function."
                 (derived-mode-p 'fundamental-mode))
             ;; store without fuzzy content and add line number."
             (if (bound-and-true-p buffer-file-name)
-                (if (not arg)
-                    ;; store in PATH::NUM::LINE format
-                    (let ((cur-line (org-links-org-link--normalize-string
-                                     (buffer-substring-no-properties (line-beginning-position)
-                                                                     (line-end-position)))))
+
+                ;; without argument shorter PATH::NUM
+                (let ((cur-line (org-links-org-link--normalize-string
+                                 (buffer-substring-no-properties (line-beginning-position)
+                                                                 (line-end-position)))))
+                  (if (not arg)
                       (org-links-create-link (concat
-                                              "file:"
-                                              (buffer-file-name (buffer-base-buffer))
-                                              ;; (substring link 2 (- (length link) 2)) ; path
-                                              "::" (number-to-string (line-number-at-pos))
-                                              (if (string-empty-p cur-line) "" (concat "::" cur-line)))))
-                  ;; else
-                  (org-links-create-link (concat
-                                          "file:"
-                                          (buffer-file-name (buffer-base-buffer))
-                                          ;; (substring link 2 (- (length link) 2))
-                                          "::" (number-to-string (line-number-at-pos)))))
+                                              (file-relative-name (buffer-file-name (buffer-base-buffer))
+                                                                  (file-name-directory (directory-file-name default-directory))) ; one level upper
+                                              ;; (substring link 2 (- (length link) 2))
+                                              "::" (number-to-string (line-number-at-pos))))
+                    ;; else - with argument - longer PATH::NUM::LINE format
+                    (org-links-create-link (concat
+                                            "file:"
+                                            (buffer-file-name (buffer-base-buffer))
+                                            ;; (substring link 2 (- (length link) 2)) ; path
+                                            "::" (number-to-string (line-number-at-pos))
+                                            (if (string-empty-p cur-line) "" (concat "::" cur-line))))))
               ;; else - *scratch* buffer
               (org-links-create-link (org-links--create-simple-at-point arg))))
 

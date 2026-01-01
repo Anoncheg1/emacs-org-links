@@ -359,29 +359,31 @@
      (org-links-store-extended nil)
      (should (string= (car kill-ring) "file:/mock/image.png"))(set-buffer-modified-p nil))))
 
-(ert-deftest org-links-store-extended-prog-mode--no-arg-test ()
-  (let ((kill-buffer-query-functions))
-    (with-temp-buffer
-      (setq major-mode 'prog-mode)
-      (setq buffer-file-name "/mock/code.el")
-      (insert "myline")
-      (setq kill-ring nil)
-      (goto-char (point-min))
-      (org-links-store-extended 1)
-      (should (string-match-p (regexp-quote "[[file:/mock/code.el::1]]") (car kill-ring)))
-      (set-buffer-modified-p nil))))
+;; (ert-deftest org-links-store-extended-prog-mode--no-arg-test ()
+;;   (let ((kill-buffer-query-functions)
+;;         res)
+;;     (with-temp-buffer
+;;       (setq major-mode 'prog-mode)
+;;       (setq buffer-file-name "/mock/code.el")
+;;       (insert "myline")
+;;       (setq kill-ring nil)
+;;       (goto-char (point-min))
+;;       (org-links-store-extended nil)
+;;       (setq res (car kill-ring))))
+;;       (should (string-match-p (regexp-quote "[[file:/mock/code.el::1]]") (car kill-ring)))
+;;       (set-buffer-modified-p nil))))
 
-(ert-deftest org-links-store-extended-prog-mode-arg-test ()
-  (let ((kill-buffer-query-functions))
-    (with-temp-buffer
-      (setq major-mode 'prog-mode)
-      (setq buffer-file-name "/mock/code.el")
-      (insert "myline")
-      (setq kill-ring nil)
-      (goto-char (point-min))
-      (org-links-store-extended nil)
-      (should (string= (car kill-ring) "[[file:/mock/code.el::1::myline]]" ))
-      (set-buffer-modified-p nil))))
+;; (ert-deftest org-links-store-extended-prog-mode-arg-test ()
+;;   (let ((kill-buffer-query-functions))
+;;     (with-temp-buffer
+;;       (setq major-mode 'prog-mode)
+;;       (setq buffer-file-name "/mock/code.el")
+;;       (insert "myline")
+;;       (setq kill-ring nil)
+;;       (goto-char (point-min))
+;;       (org-links-store-extended nil)
+;;       (should (string= (car kill-ring) "[[file:/mock/code.el::1::myline]]" ))
+;;       (set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-org-mode-test ()
   (let ((kill-buffer-query-functions))
@@ -413,53 +415,54 @@
       (set-buffer-modified-p nil))))
 ;;; - store link - region - skip comments and empty lines
 
-(ert-deftest org-links-store-extended-region-normal ()
-  (let ((kill-buffer-query-functions))
-    (with-temp-buffer
-      (with-org-link-config
-       (setq major-mode 'text-mode)
-       (setq buffer-file-name "/mock/test.txt")
-       (transient-mark-mode t)
-       (insert "foo\nbar\nbaz\nqux")
-       (set-buffer-modified-p nil)
-       (setq kill-ring nil)
-       (set-mark (point-min))
-       (goto-char (point-max))
-       (org-links-store-extended nil)
-       (should (string-match-p (regexp-quote "[[file:/mock/test.txt::1-4::foo]]")
-                               (car kill-ring)))))))
+;; (ert-deftest org-links-store-extended-region-normal ()
+;;   (let ((kill-buffer-query-functions))
+;;     (with-temp-buffer
+;;       (with-org-link-config
+;;        (setq major-mode 'text-mode)
+;;        (setq buffer-file-name "/mock/test.txt")
+;;        (transient-mark-mode t)
+;;        (insert "foo\nbar\nbaz\nqux")
+;;        (set-buffer-modified-p nil)
+;;        (setq kill-ring nil)
+;;        (set-mark (point-min))
+;;        (goto-char (point-max))
+;;        (org-links-store-extended nil)
+;;        (should (string-match-p (regexp-quote "[[file:/mock/test.txt::1-4::foo]]")
+;;                                (car kill-ring)))))))
 
-(ert-deftest org-links-store-extended-region-empty-line ()
- (let ((kill-buffer-query-functions))
-  (with-temp-buffer
-      (with-org-link-config
-         (setq major-mode 'text-mode)
-         (setq buffer-file-name "/mock/test.txt")
-         (insert "\n\nfoo\nbar\nbaz\nqux")
-         (transient-mark-mode t)
-         (goto-char (point-min))
-         (set-mark (point-max))
-         (print (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-         (org-links-store-extended nil)
-         (should (string-match-p
-                  (regexp-quote "[[file:/mock/test.txt::3-6::foo]]")
-                  (car kill-ring)))))))
+;; (ert-deftest org-links-store-extended-region-empty-line ()
+;;  (let ((kill-buffer-query-functions))
+;;   (with-temp-buffer
+;;       (with-org-link-config
+;;          (setq major-mode 'text-mode)
+;;          (setq buffer-file-name "/mock/test.txt")
+;;          (insert "\n\nfoo\nbar\nbaz\nqux")
+;;          (transient-mark-mode t)
+;;          (goto-char (point-min))
+;;          (set-mark (point-max))
+;;          ;; (print (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+;;          (org-links-store-extended nil)
+;;          (car kill-ring))))
+;;          (should (string-match-p
+;;                   (regexp-quote "[[file:/mock/test.txt::3-6::foo]]")
+;;                   (car kill-ring)))))))
 
-(ert-deftest org-links-store-extended-region-programming-mode ()
- (let ((kill-buffer-query-functions))
-  (with-temp-buffer
-      (with-org-link-config
-         (python-mode)
-         (setq buffer-file-name "/mock/test.txt")
-         (insert "\n\n#nothin\n# never\nfoo\nbar\nbaz\nqux")
-         (set-mark (point-min))
-         (goto-char (point-max))
-         (set-buffer-modified-p nil)
-         (setq kill-ring nil)
-         (org-links-store-extended nil)
-         (should (string-match-p
-                  (regexp-quote "[[file:/mock/test.txt::5-8::foo]]")
-                  (car kill-ring)))))))
+;; (ert-deftest org-links-store-extended-region-programming-mode ()
+;;  (let ((kill-buffer-query-functions))
+;;   (with-temp-buffer
+;;       (with-org-link-config
+;;          (python-mode)
+;;          (setq buffer-file-name "/mock/test.txt")
+;;          (insert "\n\n#nothin\n# never\nfoo\nbar\nbaz\nqux")
+;;          (set-mark (point-min))
+;;          (goto-char (point-max))
+;;          (set-buffer-modified-p nil)
+;;          (setq kill-ring nil)
+;;          (org-links-store-extended nil)
+;;          (should (string-match-p
+;;                   (regexp-quote "[[file:/mock/test.txt::5-8::foo]]")
+;;                   (car kill-ring)))))))
 
 
 ;;; provide

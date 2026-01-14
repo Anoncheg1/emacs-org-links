@@ -220,6 +220,45 @@ Bad handling of [ character, such links should be avoided."
 ;;          (org-links-create-link link-string))))
 
 ;; -=  Copy to clipboard - create link - main
+(defun org-links--create-link-for-region (arg)
+  "Create link based on current position for any mode."
+  (interactive "P\n")
+  (prog1
+      (let ((r-end (region-end))
+            (r-beg (region-beginning))
+            (path (org-links-create-link (if (not arg)
+                                             ;; path: one level upper and relative
+                                             (file-relative-name (buffer-file-name (buffer-base-buffer))
+                                                                 (file-name-directory (directory-file-name default-directory)))
+                                           ;; else - path: full
+                                           (buffer-file-name (buffer-base-buffer))))))
+        ;; Skip empty lines and comments at beginning of region
+        (save-excursion
+          (goto-char r-beg)
+          (when (not arg)
+            ;; Skip empty lines
+            (beginning-of-line)
+            (re-search-forward "[^ \t\n]" r-end t)
+            ;; skip comments
+            (when (derived-mode-p 'prog-mode)
+              ;; (print (list "vvv" (comment-only-p (line-beginning-position) (line-end-position))))
+              (while (comment-only-p (line-beginning-position) (line-end-position))
+                (forward-line)
+                ;; (re-search-forward "[^ \t\n]" r-end t)
+                )))
+          ;; make link
+          (concat (substring path 0 (- (length path) 2)) "::"
+                  (number-to-string (line-number-at-pos (point))) "-" (number-to-string (line-number-at-pos r-end))
+                  (when (not arg)
+                    (concat "::"
+                            ;; get first line
+                            (org-links-org-link--normalize-string
+                             (buffer-substring-no-properties
+                              (line-beginning-position)
+                              (line-end-position)))))
+                  "]]")))
+    (deactivate-mark)))
+
 ;;;###autoload
 (defun org-links-store-extended (arg)
   "Store link to `kill-ring' clipboard.
@@ -249,39 +288,7 @@ For usage with original Org `org-open-at-point-global' function."
            ;; - format: NUM-NUM::LINE
            ;; - format: NUM-NUM - with argument
            ((use-region-p)
-            (prog1 (let ((path (org-links-create-link (concat
-                                                       (if (not arg)
-                                                           ;; one level upper - shorter
-                                                           (file-relative-name (buffer-file-name (buffer-base-buffer))
-                                                                               (file-name-directory (directory-file-name default-directory)))
-                                                         ;; else - longer
-                                                         (buffer-file-name (buffer-base-buffer))))))
-                         (r-end (region-end)))
-                     ;; Skip empty lines and comments
-                     (save-excursion
-                       (when (not arg)
-                         (let ((r-end (region-end)))
-                           (goto-char (region-beginning))
-                           ;; Skip empty lines
-                           (beginning-of-line)
-                           (re-search-forward "[^ \t\n]" r-end t)
-                           ;; skip comments
-                           (when (derived-mode-p 'prog-mode)
-                             (while (comment-only-p (line-beginning-position) (line-end-position))
-                               (forward-line)
-                               (re-search-forward "[^ \t\n]" r-end t)))))
-                       ;; make link
-                       (concat (substring path 0 (- (length path) 2)) "::"
-                               (number-to-string (line-number-at-pos (line-beginning-position))) "-" (number-to-string (line-number-at-pos r-end))
-                               (when (not arg)
-                                 (concat "::"
-                                         ;; get first line
-                                         (org-links-org-link--normalize-string
-                                          (buffer-substring-no-properties
-                                           (line-beginning-position)
-                                           (line-end-position)))))
-                               "]]")))
-              (deactivate-mark)))
+            (org-links--create-link-for-region arg))
 
            ;; all modes - for cursor at <<target>>
            ;; [[target]]

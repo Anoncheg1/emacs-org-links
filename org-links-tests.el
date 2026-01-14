@@ -447,23 +447,25 @@
 ;;          (should (string-match-p
 ;;                   (regexp-quote "[[file:/mock/test.txt::3-6::foo]]")
 ;;                   (car kill-ring)))))))
+;;; - store link - region - skip comments in programming mode
+(ert-deftest org-links-store-extended-region-programming-mode ()
+ (let ((kill-buffer-query-functions))
+  (with-temp-buffer
+      (with-org-link-config
+         (python-mode)
+         (setq buffer-file-name "/mock/test.txt")
+         (insert "\n\n#nothin\n# never\nfoo\nbar\nbaz\nqux")
+         (set-mark (point-min))
+         (goto-char (point-max))
+         (set-buffer-modified-p nil)
+         (setq kill-ring nil)
+         (org-links-store-extended nil)
+         (should (string-match-p
+                  "\[\[\.\..*/mock/test\.txt::5-8::foo]]"
+                  (car kill-ring)))))))
 
-;; (ert-deftest org-links-store-extended-region-programming-mode ()
-;;  (let ((kill-buffer-query-functions))
-;;   (with-temp-buffer
-;;       (with-org-link-config
-;;          (python-mode)
-;;          (setq buffer-file-name "/mock/test.txt")
-;;          (insert "\n\n#nothin\n# never\nfoo\nbar\nbaz\nqux")
-;;          (set-mark (point-min))
-;;          (goto-char (point-max))
-;;          (set-buffer-modified-p nil)
-;;          (setq kill-ring nil)
-;;          (org-links-store-extended nil)
-;;          (should (string-match-p
-;;                   (regexp-quote "[[file:/mock/test.txt::5-8::foo]]")
-;;                   (car kill-ring)))))))
 
+;;; - create-link-for-region
 
 ;;; provide
 (provide 'org-links-tests)

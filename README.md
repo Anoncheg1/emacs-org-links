@@ -42,10 +42,11 @@ This is the solution to some Org links problems:
 ### Installation - from MELPA
 ```elisp
 (require 'package)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (package-initialize)
 ```
-Install via `M-x package-install RET org-links RET`
+Install via `M-x package-install RET org-links RET` or `M-x package-list-packages`
 
 ### Installation - With `use-package`
 If your package is available on MELPA, add this to your init file:

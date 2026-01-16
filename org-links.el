@@ -221,8 +221,11 @@ Bad handling of [ character, such links should be avoided."
 
 ;; -=  Copy to clipboard - create link - main
 (defun org-links--create-link-for-region (arg)
-  "Create link based on current position for any mode."
-  (interactive "P\n")
+  "Create link based on current position for any mode.
+If universal argument ARG provided, then links create with full path for
+sharing between documents.
+Without ARG liks are shorter for working in current document."
+  (interactive "P")
   (prog1
       (let ((r-end (region-end))
             (r-beg (region-beginning))
@@ -262,7 +265,9 @@ Bad handling of [ character, such links should be avoided."
 ;;;###autoload
 (defun org-links-store-extended (arg)
   "Store link to `kill-ring' clipboard.
-ARG is universal argument.
+If universal argument ARG provided, then links create with full path for
+sharing between documents.
+Without ARG liks are shorter for working in current document.
 Count lines from 1 like `line-number-at-pos' function does.
 For usage with original Org `org-open-at-point-global' function."
   (interactive "P\n")

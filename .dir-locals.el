@@ -7,7 +7,7 @@
      ;; (eval . (outline-minor-mode 1))
      (eval . (progn (keymap-local-set "C-c k" #'outline-previous-heading)
                     (keymap-local-set "C-c n" #'outline-next-heading)
-                    ;; (keymap-local-set "C-c C-e" #'my/outline-hide-others)
+                    (keymap-local-set "C-c C-e" #'outline-it-hide-others)
                     (keymap-local-set "<backtab>" #'outline-cycle-buffer)
                     (keymap-local-set "C-<tab>" #'outline-toggle-children)
                     (outline-hide-body)

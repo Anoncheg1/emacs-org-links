@@ -112,6 +112,7 @@
 ;; - provide option FOR NUM::FUZZY: if several lines found jump to
 ;;   closes to NUM, not to exact NUM.
 ;; - when at <<some>> generate special link without universal arg.
+;; - support multiline links separated at ::
 ;;; Code:
 ;; -=  includes
 (require 'ol)
@@ -187,8 +188,12 @@ Bad handling of [ character, such links should be avoided."
             "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position))))))
 
 (defun org-links--create-org-default-at-point ()
-  "Wrap `org-store-link' to extract main parts of link."
-  (let ((link-string (substring-no-properties (org-store-link nil))))
+  "Wrap `org-store-link' to extract main parts of link.
+Used code from `org-babel-tangle--unbracketed-link'."
+  (let ((link-string (substring-no-properties
+                      (cl-letf (((symbol-function 'org-store-link-functions)
+                                 (lambda () nil)))
+                        (org-store-link nil)))))
     ;; - [[ ]]  links
     (if (string-match org-link-bracket-re link-string) ; 1: file::search-option 2: decription
         (let ((path (match-string 1 link-string))
@@ -197,27 +202,6 @@ Bad handling of [ character, such links should be avoided."
           (org-links-create-link path desc))
          ;; else - other types
          (org-links-create-link link-string))))
-
-;; (defun org-links--create-org-default-at-point ()
-;;   "Wrap `org-store-link' to extract main parts of link."
-;;   (let* ((link-string (substring-no-properties (org-store-link nil)))
-;;          (link (with-temp-buffer
-;;                  (insert link-string)
-;;                  (goto-char 1)
-;;                  (org-element-link-parser)))
-;;          (type (org-element-property :type link))
-;;          (path (org-element-property :path link)))
-
-
-;;   (let ((link-string (substring-no-properties (org-store-link nil))))
-;;     ;; - [[ ]]  links
-;;     (if (string-match org-link-bracket-re link-string) ; 1: file::search-option 2: decription
-;;         (let ((path (match-string 1 link-string))
-;;               (desc (match-string 2 link-string)))
-
-;;           (org-links-create-link path desc))
-;;          ;; else - other types
-;;          (org-links-create-link link-string))))
 
 ;; -=  Copy to clipboard - create link - main
 (defun org-links--create-link-for-region (arg)
@@ -281,9 +265,13 @@ For usage with original Org `org-open-at-point-global' function."
            ;; - Images mode 2
            ((derived-mode-p (intern "image-dired-image-mode"))
             (concat "file:" (buffer-file-name (buffer-base-buffer))))
-           ;; - Images mode 2
+           ;; - Images mode 3
            ((derived-mode-p (intern "image-mode"))
             (concat "file:" (buffer-file-name (buffer-base-buffer))))
+           ;; - Dired
+           ((derived-mode-p (intern "dired-mode"))
+            (string-join (mapcar (lambda (x) (concat "file:" x))
+                                   (funcall (intern "dired-get-marked-files") arg)) " "))
            ;; - Buffer menu
            ((derived-mode-p 'Buffer-menu-mode)
             (concat "file:" (or (buffer-file-name (Buffer-menu-buffer t))

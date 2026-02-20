@@ -136,7 +136,7 @@ For opening links we add hook to org-execute-file-search-functions that called f
 - Call LLMs and AI agents from Org-mode ai block. https://github.com/Anoncheg1/emacs-oai
 
 ## Donate, sponsor author
-You can sponsor author crypto money directly with crypto currencies:
+You can sponsor author directly with crypto currencies:
 
 - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
 

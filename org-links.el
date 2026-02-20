@@ -116,6 +116,7 @@
 ;;; Code:
 ;; -=  includes
 (require 'ol)
+(require 'buff-menu)
 (require 'org-element)
 
 ;; -=  variables

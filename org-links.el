@@ -343,15 +343,16 @@ For usage with original Org `org-open-at-point-global' function."
             (if (bound-and-true-p buffer-file-name)
                 (if (not arg)
                     ;; todo: make link only for fuzzy link type.
-                    (let ((cur-line (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
-                      (org-links-create-link (concat
-                                              "file:"
-                                              (buffer-file-name (buffer-base-buffer))
-                                              ;; (substring link 2 (- (length link) 2))
-                                              "::" (number-to-string (line-number-at-pos))
-                                              (if (string-empty-p cur-line) "" (concat "::" cur-line)))))
-                  ;; else - default
-                  (org-links--create-org-default-at-point))
+                    ;; default
+                    (org-links--create-org-default-at-point)
+                  ;; else - d
+                  (let ((cur-line (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                    (org-links-create-link (concat
+                                            "file:"
+                                            (buffer-file-name (buffer-base-buffer))
+                                            ;; (substring link 2 (- (length link) 2))
+                                            "::" (number-to-string (line-number-at-pos))
+                                            (if (string-empty-p cur-line) "" (concat "::" cur-line))))))
 
               ;; else - *scratch* buffer
               (org-links-create-link (org-links--create-simple-at-point arg)))))))

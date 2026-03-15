@@ -28,13 +28,21 @@ First, we search for LINE, if not found we use NUM line number.
 
 `[[NUM-NUM]]` - used for region selection.
 
+Known issues: Org export not working properly with new formats.
+
+## Behavior
+
+If links with linke number we use own search algo.
+
+Functions for storing links copy shortest links wihtout universtal and linkest links with it.
+
 ## Why?
 
 LLMs and fuzzy search will be more effective with additional information, if you want link that point to block of code you will need a range of line numbers
 
 This is the solution to some Org links problems:
-- links stored without number
-- targets in Org mode: stored same as a lines
+- links stored without line number
+- targets in Org mode: stored same way as a lines
 - opening links with fuzzy search will match any first line with fuzzy substrings, not full line match, (org-link-search-must-match-exact-headline = nil required).
 - fuzzy always match full line exactly (we search for first lines that begins with link)
 
@@ -123,8 +131,18 @@ Used, when org-links package is not installed.")
 
 Provided function for copying link to kill ring with additional format for programming mode.
 
-For opening links we add hook to org-execute-file-search-functions that called from `org-link-search' function, used by Org function for oppening files: `org-open-at-point' (bound to C-c C-o by default in Org mode.) and `org-open-at-point-global'.
+Org use:
+1) org-open-at-point
+2) org-links-org-open-at-point-global
 
+Those functions (C-c C-o) call `org-open-file` and `org-link-open`, we modify behavior of the last one.
+- we directy advice `org-open-file` - called for "file:" links.
+- add hook to `org-execute-file-search-functions` that called from `org-link-search` function that called for short links.
+- and to `org-open-link-functions`, called from `org-link-open` - Fix for case for not Org mode to find <<target1>> links.
+
+
+- org-links-org-open-file-advice - called for :file
+- org-links-additional-formats -> org-links--local-get-target-position-for-link - called for short links
 ## Other packages
 - Navigation in Dired, Packages, Buffers modes https://github.com/Anoncheg1/firstly-search
 - Search with Chinese	https://github.com/Anoncheg1/pinyin-isearch

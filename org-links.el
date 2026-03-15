@@ -102,12 +102,14 @@
 ;; - Solution for "callback hell"	https://github.com/Anoncheg1/emacs-async1
 ;; - Restore buffer state	https://github.com/Anoncheg1/emacs-unmodified-buffer1
 ;; - outline.el usage		https://github.com/Anoncheg1/emacs-outline-it
-;; - ai_block for Org mode for chat. https://github.com/Anoncheg1/emacs-oai
+;; - ai_block for Org mode for chat.  https://github.com/Anoncheg1/emacs-oai
 
 ;; *DONATE MONEY* to sponsor author directly with crypto currencies:
 ;; - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
 ;; - USDT (Tether) address: TVoXfYMkVYLnQZV3mGZ6GvmumuBfGsZzsN
 ;; - TON (Telegram) address: UQC8rjJFCHQkfdp7KmCkTZCb5dGzLFYe2TzsiZpfsnyTFt9D
+
+;; Known issues: Org export not working properly with new formats.
 
 ;;; TODO:
 ;; - each file: link should be generated with some description. (for export)
@@ -115,6 +117,9 @@
 ;;   closes to NUM, not to exact NUM.
 ;; - when at <<some>> generate special link without universal arg.
 ;; - support multiline links separated at ::
+;; - compare org-links-org-open-file-advice and
+;;  org-links--local-get-target-position-for-link
+
 ;;; Code:
 ;; -=  includes
 (require 'ol)
@@ -177,6 +182,7 @@ DESCRIPTION not used."
 ;;     (error "Org-links"))
 
 ;; -=  functions: Copy to clipboard
+;; old
 (defun org-links--create-simple-at-point (arg)
   "Link builder for Fundamental mode.
 ARG is universal argument, if non-nil.
@@ -188,22 +194,25 @@ Bad handling of [ character, such links should be avoided."
     ;; store in NUM::LINE format
     (concat (number-to-string (line-number-at-pos))
             "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position))))))
+; old
+;; (defun org-links--create-org-default-at-point ()
+;;   "Wrap `org-store-link' to extract main parts of link.
+;; Return string in format [[file:path::fuzzy][desc]].
+;; Used code from `org-babel-tangle--unbracketed-link'."
+;;   (let ((link-string (substring-no-properties
+;;                       (cl-letf (((symbol-function 'org-store-link-functions)
+;;                                  (lambda () nil)))
+;;                         (org-store-link nil)))))
+;;     ;; - [[ ]]  links
+;;     (if (string-match org-link-bracket-re link-string) ; 1: file::search-option 2: decription
+;;         (let ((path (match-string 1 link-string))
+;;               (desc (match-string 2 link-string)))
 
-(defun org-links--create-org-default-at-point ()
-  "Wrap `org-store-link' to extract main parts of link.
-Used code from `org-babel-tangle--unbracketed-link'."
-  (let ((link-string (substring-no-properties
-                      (cl-letf (((symbol-function 'org-store-link-functions)
-                                 (lambda () nil)))
-                        (org-store-link nil)))))
-    ;; - [[ ]]  links
-    (if (string-match org-link-bracket-re link-string) ; 1: file::search-option 2: decription
-        (let ((path (match-string 1 link-string))
-              (desc (match-string 2 link-string)))
+;;           (org-links-create-link path desc))
+;;          ;; else - other types
+;;          (org-links-create-link link-string))))
 
-          (org-links-create-link path desc))
-         ;; else - other types
-         (org-links-create-link link-string))))
+
 
 ;; -=  Copy to clipboard - create link - main
 (defun org-links--create-link-for-region (arg)
@@ -230,7 +239,6 @@ Without ARG liks are shorter for working in current document."
             (re-search-forward "[^ \t\n]" r-end t)
             ;; skip comments
             (when (derived-mode-p 'prog-mode)
-              ;; (print (list "vvv" (comment-only-p (line-beginning-position) (line-end-position))))
               (while (comment-only-p (line-beginning-position) (line-end-position))
                 (forward-line)
                 ;; (re-search-forward "[^ \t\n]" r-end t)
@@ -248,13 +256,35 @@ Without ARG liks are shorter for working in current document."
                   "]]")))
     (deactivate-mark)))
 
+;; (defcustom org-links--get-path 'one-level-upper
+;;   ""
+;;     :type 'symbol
+;;     :group 'org-links)
+
+;; (defun org-links--get-path ()
+;;   ; one level upper
+;;   (abbreviate-file-name (expand-file-name path))
+;;   (cond
+;;     ((eq org-links--get-path 'one-level-upper)
+;;      (let* ((dfn (directory-file-name default-directory))
+;;             (file-name-directory
+
+
+;;   "../" (file-relative-name (buffer-file-name (buffer-base-buffer))
+;;                             (file-name-directory (directory-file-name default-directory)))
+
 ;;;###autoload
 (defun org-links-store-extended (arg)
   "Store link to `kill-ring' clipboard.
 If universal argument ARG provided, then links create with full path for
-sharing between documents.
-Without ARG liks are shorter for working in current document.
+sharing between documents and description
+Without ARG liks are shorter for working in current document and without
+ description.
+`org-link-make-string' is used to surround with [] and quote them inside.
 Count lines from 1 like `line-number-at-pos' function does.
+`org-links-create-link' do same, but also apply change path.
+For programming  modes we create link  with path by default,  because it
+ more oftenly used.
 For usage with original Org `org-open-at-point-global' function."
   (interactive "P\n")
   ;; (abbreviate-file-name (buffer-file-name - ?
@@ -302,62 +332,102 @@ For usage with original Org `org-open-at-point-global' function."
                 (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
                 (derived-mode-p 'fundamental-mode))
             ;; store without fuzzy content and add line number."
-            (if (bound-and-true-p buffer-file-name)
+            (if (and (bound-and-true-p buffer-file-name) arg)
+                (org-link-make-string
+                 (concat (number-to-string (line-number-at-pos)) "::"
+                         (org-links-org-link--normalize-string)))
+              ;; else - with argument - longer PATH::NUM::LINE format
+              (let ((cline (org-links-org-link--normalize-string)))
+                (org-links-create-link
+                 (concat "file:" (buffer-file-name (buffer-base-buffer))
+                         "::" (number-to-string (line-number-at-pos))
+                         (if (string-empty-p cline) "" (concat "::" cline)))))
 
-                ;; without argument shorter PATH::NUM
-                (let ((cur-line (org-links-org-link--normalize-string
-                                 (buffer-substring-no-properties (line-beginning-position)
-                                                                 (line-end-position)))))
-                  (if (not arg)
-                      (org-links-create-link (concat
-                                              (file-relative-name (buffer-file-name (buffer-base-buffer))
-                                                                  (file-name-directory (directory-file-name default-directory))) ; one level upper
-                                              ;; (substring link 2 (- (length link) 2))
-                                              "::" (number-to-string (line-number-at-pos))))
-                    ;; else - with argument - longer PATH::NUM::LINE format
-                    (org-links-create-link (concat
-                                            "file:"
-                                            (buffer-file-name (buffer-base-buffer))
-                                            ;; (substring link 2 (- (length link) 2)) ; path
-                                            "::" (number-to-string (line-number-at-pos))
-                                            (if (string-empty-p cur-line) "" (concat "::" cur-line))))))
-              ;; else - *scratch* buffer
-              (org-links-create-link (org-links--create-simple-at-point arg))))
+                ;; without argument shorter NUM::LINE
+                ;; (number-to-string (line-number-at-pos)) "::" (org-links-org-link--normalize-string)))
+
+                      ;; (org-links-create-link (concat
+                      ;;                         "../" (file-relative-name (buffer-file-name (buffer-base-buffer))
+                      ;;                                             (file-name-directory (directory-file-name default-directory))) ; one level upper
+                      ;;                         ;; (substring link 2 (- (length link) 2))
+                      ;;                         "::" (number-to-string (line-number-at-pos))))
+
+              ))
+              ;; (org-links-create-link (org-links--create-simple-at-point arg))))
 
            ;; - Org mode - at header
            ;; format: [[* header]]
            ((and (derived-mode-p 'org-mode)
                  (org-at-heading-p)
-                 (not arg))
-            (org-link-make-string
-             (substring-no-properties
-              (org-link-heading-search-string))))
-           ;; - Org mode - with arg
-           ((and (derived-mode-p 'org-mode)
-                 arg)
-            (substring-no-properties (org-store-link nil)))
+                 (if (and arg (bound-and-true-p buffer-file-name)) ; used: `org-link--file-link-to-here'
+                     (let ((desc (org-link--normalize-string
+                                  (org-get-heading t t t t)))
+                           (path (buffer-file-name (buffer-base-buffer))))
+                     (org-links-create-link
+                      (concat "file:"
+                              path
+                              "::" (number-to-string (line-number-at-pos))
+                              "::" (org-links-org-link--normalize-string))))
+                     ;; (org-link--file-link-to-here)
+                     ;; (let ((org-link-file-path-type nil))
+                       ;; (org-links--create-org-default-at-point)
+                   ;; else - short - "[[233::*ai <<asd>>]]"
+                   (org-link-make-string
+                    (concat (number-to-string (line-number-at-pos)) "::"
+                            (substring-no-properties
+                             (org-link-heading-search-string)))))))
+           ;; ;; - Org mode
+           ((derived-mode-p 'org-mode)
+            (let ((cline (org-links-org-link--normalize-string)))
+              (if (and arg (bound-and-true-p buffer-file-name)) ; used: `org-link--file-link-to-here'
+                  ;; long
+                  (let ((desc (substring-no-properties (org-link--normalize-string (org-current-line-string) t)))
+                        (path (buffer-file-name (buffer-base-buffer))))
+                    (org-links-create-link
+                     (concat "file:"
+                             path
+                             "::" (number-to-string (line-number-at-pos))
+                             (if (string-empty-p cline) "" (concat "::" cline)))
+                     desc))
+                ;; else - short
+                (org-link-make-string
+                 (concat (number-to-string (line-number-at-pos)) "::"
+                         cline)))))
 
-           ;; all modes
-           ;; format: - PATH::NUM::LINE
+           ;;  (substring-no-properties (org-store-link nil)))
+
+           ;; all modes - any line [[../emacs-org-links/org-links.el::367]]
+           ;; format: - NUM::LINE and PATH::NUM::LINE
            (t
-            (if (bound-and-true-p buffer-file-name)
-                (if (not arg)
+            (if (and arg (bound-and-true-p buffer-file-name))
                     ;; todo: make link only for fuzzy link type.
-                    ;; default
-                    (org-links--create-org-default-at-point)
-                  ;; else - d
-                  (let ((cur-line (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))))
+                    ;; ;; default
+                    ;; (org-links--create-org-default-at-point)
+                  ;; else
+
+                  (let ((org-link-file-path-type (if arg
+                                                     org-link-file-path-type
+                                                     ;;else
+                                                     'relative)) ; short
+                        (cur-line (org-links-org-link--normalize-string))) ; "" or "line"
                     (org-links-create-link (concat
                                             "file:"
-                                            (buffer-file-name (buffer-base-buffer))
+                                            ;; (if arg
+                                                (buffer-file-name (buffer-base-buffer))
+                                              ;; ;; else
+                                              ;; (print (list "wtf2" (current-buffer) (file-relative-name (buffer-file-name (buffer-base-buffer)))))
+                                              ;; (file-relative-name (buffer-file-name (buffer-base-buffer))))
                                             ;; (substring link 2 (- (length link) 2))
                                             "::" (number-to-string (line-number-at-pos))
-                                            (if (string-empty-p cur-line) "" (concat "::" cur-line))))))
+                                            (if (string-empty-p cur-line) "" (concat "::" cur-line)))))
 
               ;; else - *scratch* buffer
               (org-links-create-link (org-links--create-simple-at-point arg)))))))
      (kill-new link)
      (princ link))))
+
+;; (let ((org-link-file-path-type 'relative))
+;;   (org-links--create-org-default-at-point))
 
 ;; -=  Fallback "Save to clipboard" without requirement of org-links
 
@@ -404,21 +474,27 @@ Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
 
 ;; -=  help functions: unnormalize link
 
-(defun org-links-org-link--normalize-string (string &optional context)
+(defun org-links-org-link--normalize-string (&optional string)
   "Compact spaces and trim leading to make link more compact.
 Modified version of `org-link--normalize-string'.
 Instead of much of removal we only compact spaces and remove leading.
 Instead of removing [1/3], [50%], leading ( and trailing ), spaces at
 the end of STRING, we just compress spaces in line and remove leading
 spaces from STRING.  CONTEXT ignored."
-  (ignore context) ;; noqa: unused
-  (replace-regexp-in-string
-   (rx (one-or-more (any " \t")))
-   " "
-   (string-trim
-    (org-link-escape
-     string))
-   "[ \t\n\r]+"))
+  (let ((string (or string (buffer-substring-no-properties
+                            (line-beginning-position)
+                            (line-end-position)))))
+    (replace-regexp-in-string
+     (rx (one-or-more (any " \t")))
+     " "
+     (string-trim
+      ;; (org-link-escape ; add two slashed, but onle one needed. [
+      ;; (replace-regexp-in-string "\\([][]\\)"
+      ;;                           "\\\\1"
+      string)
+     "[ \t\n\r]+")))
+
+(replace-regexp-in-string "\\([][]\\)" "\\\\\\1" "[")
 
 (defun org-links-org--unnormalize-string (string)
   "Create regex matching STRING with arbitrary whitespace.
@@ -454,10 +530,12 @@ To create proper regex, string should be first be processed with
 (defun org-links-find-first-two-exact-lines-in-buffer-optimized (search-string-regex &optional get-positions n)
   "Find first N or two exactly matching lines to SEARCH-STRING-REGEX.
 Search in current buffer.
-Returns list of line numbers or empty list.
 Count lines from 1 like `line-number-at-pos' function does.
 If GET-POSITIONS is  non-nil, returns list of buffer  positions for each
-match otherwisde line numbers."
+match otherwisde line numbers.
+Returns list of line numbers or empty list."
+  (when org-links--debug-flag
+      (print (format "first-two-exact-lines-in-buffer-optimized %s %s" search-string-regex get-positions)))
   (let* ((threshold org-links-threshold-search-link-optimization-max-file)
          (bufsize (- (point-max) (point-min)))
          (n (or n 2)))
@@ -512,7 +590,10 @@ numbner."
         (car re)
       ;; else
       (unless org-links-silent
-        (message "More than one line found, NUM is used."))
+        (if  (> (length re) 1)
+            (message "More than one line found, NUM is used. %s" re)
+          ;; else
+          (message "Line not found, NUM is used.")))
       nil)))
 
 (defun org-links--find-target (target-string)
@@ -525,7 +606,10 @@ numbner."
         (car re)
       ;; else
       (unless org-links-silent
-        (message "More than one line found, NUM is used."))
+        (if  (> (length re) 1)
+            (message "More than one line found, NUM is used. %s" re)
+          ;; else
+          (message "Line not found, NUM is used.")))
       nil)))
 
 
@@ -617,6 +701,8 @@ Execution path that cause error: `org-link-open-from-string' ->
 `org-link-open' (hook here) -> `org-link-search' (cause error).
 Hook requirement: When the function does handle the link, it must return
 a non-nil value.  Don't called for file: type of links."
+  (when org-links--debug-flag
+    (print (list "org-links-fix-open-target-not-org"  link-content)))
   (if (and (not (derived-mode-p 'org-mode))
            (not current-prefix-arg))
       (progn (when-let ((pos (org-links--find-target link-content)))
@@ -633,11 +719,14 @@ a non-nil value.  Don't called for file: type of links."
 ;;;###autoload
 (defun org-links-additional-formats (link)
   "Jump to link position in current buffer.
-Return t if link was processed or nil.
 Called from `org-link-search', which always called for link targets in
 current buffer.
 LINK is string after :: or was just in [[]].
-`org-execute-file-search-in-bibtex' as example."
+Used for  `org-execute-file-search-functions'.
+`org-execute-file-search-in-bibtex' as example.
+Return t if link was processed or nil."
+  (when org-links--debug-flag
+    (print (list "org-links-additional-formats" link)))
   ;; 1) get line numbers for link
   (if-let ((nums (org-links--local-get-target-position-for-link link)))
       (let ((num1 (car nums))
@@ -657,8 +746,29 @@ LINK is string after :: or was just in [[]].
   "Support for additional formats.
 Argument ORIG-FUN is `org-open-file' that breaks at NUM-NUM,
 NUM-NUM::LINE, NUM::LINE formats.
+Support file::LINE and file:LINE formats.
 Use current buffer for search line.
 Optional argument ARGS is `org-open-file' arguments."
+  ;; [[file::#+ or  [[file:#+
+  (when org-links--debug-flag
+    (print (list "org-links-org-open-file-advice" args)))
+  ;; (if (= (length args) 2)
+  ;;     (seq-let (search _) args
+  ;;       ;; (if search
+  ;;       ;;     (progn
+  ;;       ;;       (when (string-prefix-p ":" search)
+  ;;       ;;         (setq search (substring search 1)))
+  ;;       ;;       (if-let ((line-position (org-links--find-line search)))
+  ;;       ;;           (org-goto-line line-position)))
+  ;;       ;;   ;; else - no search
+  ;;         (apply orig-fun args))
+  ;;       )
+      ;; [[file::LINE]]
+      ;; (seq-let (search _) args
+      ;;   (if-let ((line-position (org-links--find-line saerch)))
+      ;;           (org-goto-line line-position)
+      ;;   )
+      ;; else 4
   (seq-let (path in-emacs string search) args
     (setq string string) ;; noqa: unused
     (if search ; part after ::

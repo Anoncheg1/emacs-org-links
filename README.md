@@ -10,11 +10,26 @@ This package (org-links) provides facilities to help create and manage links tha
 Org mode:
 - C-c w
 ```[[180::asd]]```
+asd
+- C-u C-c w
+```[[file:~/file.org::13::asd][asd]]```
+
+Programming mode:
+- C-c w
+```[[file:~/file.org::13::asd][asd]]```
 
 - C-u C-c w
-[[file:emacs-file2026-03-15.org::180::asd][asd]]
+```[[180::asd]]```
 
-res
+Region selected:
+- C-c w
+```[[180-190::asd]]```
+
+- C-u C-c w
+```[[file:~/file.org::13-17::asd][asd]]```
+
+
+## Features
 
 1) The command `org-links-store-extended' copies a link to the current file, at the current point.
 2) The syntax above is extended to include a few variants that are useful for linking into source code:

@@ -5,7 +5,7 @@
 ;; URL: https://github.com/Anoncheg1/emacs-org-links
 ;; Version: 0.2
 ;; Created: 30 Aug 2025
-;; Package-Requires: ((emacs "27.1"))
+;; Package-Requires: ((emacs "27.2"))
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; Copyright (c) 2025 github.com/Anoncheg1,codeberg.org/Anoncheg
 
@@ -67,7 +67,6 @@
 ;; *Configuration*:
 ;; (require 'org-links)
 ;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
-;; (add-hook 'org-open-link-functions #'org-links-fix-open-target-not-org)
 ;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
 ;; (global-set-key (kbd "C-c w") #'org-links-store-extended)
 
@@ -183,17 +182,17 @@ DESCRIPTION not used."
 
 ;; -=  functions: Copy to clipboard
 ;; old
-(defun org-links--create-simple-at-point (arg)
-  "Link builder for Fundamental mode.
-ARG is universal argument, if non-nil.
-Bad handling of [ character, such links should be avoided."
-  (if arg
-      ;; else - just LINE - will work if `org-link-search-must-match-exact-headline' is nil
-      (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-      ;; (concat (number-to-string (line-number-at-pos)) "-" (number-to-string (line-number-at-pos)))
-    ;; store in NUM::LINE format
-    (concat (number-to-string (line-number-at-pos))
-            "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position))))))
+;; (defun org-links--create-simple-at-point (arg)
+;;   "Link builder for Fundamental mode.
+;; ARG is universal argument, if non-nil.
+;; Bad handling of [ character, such links should be avoided."
+;;   (if arg
+;;       ;; else - just LINE - will work if `org-link-search-must-match-exact-headline' is nil
+;;       (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+;;       ;; (concat (number-to-string (line-number-at-pos)) "-" (number-to-string (line-number-at-pos)))
+;;     ;; store in NUM::LINE format
+;;     (concat (number-to-string (line-number-at-pos))
+;;             "::" (org-links-org-link--normalize-string (buffer-substring-no-properties (line-beginning-position) (line-end-position))))))
 ; old
 ;; (defun org-links--create-org-default-at-point ()
 ;;   "Wrap `org-store-link' to extract main parts of link.
@@ -224,8 +223,7 @@ Return link or nil if line begin and end are equal for region"
   (interactive "P")
   ;; - 1) Check
   (let ((r-end (region-end))
-        (r-beg (region-beginning))
-        path)
+        (r-beg (region-beginning)))
     (unless (= (line-number-at-pos r-end)
                (line-number-at-pos r-beg))
       (when org-links--debug-flag
@@ -393,12 +391,13 @@ For usage with original Org `org-open-at-point-global' function."
                      (let ((desc (org-link--normalize-string
                                   (org-get-heading t t t t)))
                            (path (buffer-file-name (buffer-base-buffer))))
-                     (org-links-create-link
-                      (concat "file:"
-                              path
-                              "::" (number-to-string (line-number-at-pos))
-                              "::" (org-links-org-link--normalize-string))))
-                     ;; else - short - "[[233::*ai <<asd>>]]"
+                       (org-links-create-link
+                        (concat "file:"
+                                path
+                                "::" (number-to-string (line-number-at-pos))
+                                "::" (org-links-org-link--normalize-string))
+                        desc))
+                   ;; else - short - "[[233::*ai <<asd>>]]"
                    (org-link-make-string
                     (concat (number-to-string (line-number-at-pos)) "::"
                             (substring-no-properties
@@ -628,21 +627,21 @@ numbner."
           (message "Line not found, NUM is used.")))
       nil)))
 
-(defun org-lnd-target (target-string)
-  "Return line number that match TARGET-STRING in buffer or nil.
-If GET-POSITION is non-nil, then return position instead of line
-numbner."
-  (let* ((link (concat "<<" (org-links-org--unnormalize-string (regexp-quote target-string)) ">>"))
-         (re (org-links-find-first-two-exact-lines-in-buffer-optimized link t)))
-    (if (eq (length re) 1) ;; found exactly one
-        (car re)
-      ;; else
-      (unless org-links-silent
-        (if  (> (length re) 1)
-            (message "More than one line found, NUM is used. %s" re)
-          ;; else
-          (message "Line not found, NUM is used.")))
-      nil)))
+;; (defun org-lnd-target (target-string)
+;;   "Return line number that match TARGET-STRING in buffer or nil.
+;; If GET-POSITION is non-nil, then return position instead of line
+;; numbner."
+;;   (let* ((link (concat "<<" (org-links-org--unnormalize-string (regexp-quote target-string)) ">>"))
+;;          (re (org-links-find-first-two-exact-lines-in-buffer-optimized link t)))
+;;     (if (eq (length re) 1) ;; found exactly one
+;;         (car re)
+;;       ;; else
+;;       (unless org-links-silent
+;;         (if  (> (length re) 1)
+;;             (message "More than one line found, NUM is used. %s" re)
+;;           ;; else
+;;           (message "Line not found, NUM is used.")))
+;;       nil)))
 
 
 ;; -=  Open link - help functions and variablses
@@ -731,25 +730,26 @@ LINK is plain link without []."
 ;; (org-links--get-target-position-for-link "480::")
 ;; (progn (string-match org-links-num-line-regexp "480::") (match-string 2 "480::"))
 
-;;;###autoload
-(defun org-links-fix-open-target-not-org (link-content)
-  "Implementation of hook `org-open-link-functions'.
-LINK-CONTENT is a string of link without open and close square brackets.
-Fix for case for not Org mode to find <<target1>> links.
-Execution path that cause error: `org-link-open-from-string' ->
-`org-link-open' (hook here) -> `org-link-search' (cause error).
-Hook requirement: When the function does handle the link, it must return
-a non-nil value.  Don't called for file: type of links."
-  (when org-links--debug-flag
-    (print (list "org-links-fix-open-target-not-org"  link-content)))
-  (if (and (not (derived-mode-p 'org-mode))
-           (not current-prefix-arg))
-      (progn (when-let ((pos (org-links--find-target link-content)))
-               (push-mark nil t)
-               (goto-char pos))
-               t)
-    ;; else
-    nil))
+;; ;; (add-hook 'org-open-link-functions #'org-links-fix-open-target-not-org)
+;; ;;;###autoload
+;; (defun org-links-fix-open-target-not-org (link-content)
+;;   "Implementation of hook `org-open-link-functions'.
+;; LINK-CONTENT is a string of link without open and close square brackets.
+;; Fix for case for not Org mode to find <<target1>> links.
+;; Execution path that cause error: `org-link-open-from-string' ->
+;; `org-link-open' (hook here) -> `org-link-search' (cause error).
+;; Hook requirement: When the function does handle the link, it must return
+;; a non-nil value.  Don't called for file: type of links."
+;;   (when org-links--debug-flag
+;;     (print (list "org-links-fix-open-target-not-org"  link-content)))
+;;   (if (and (not (derived-mode-p 'org-mode))
+;;            (not current-prefix-arg))
+;;       (progn (when-let ((pos (org-links--find-line link-content)))
+;;                (push-mark nil t)
+;;                (goto-char pos))
+;;                t)
+;;     ;; else
+;;     nil))
 
 ;; (add-hook 'org-open-link-functions #'org-links-fix-open-target-not-org)
 

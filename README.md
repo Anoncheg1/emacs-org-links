@@ -7,9 +7,14 @@
 This package (org-links) provides facilities to help create and manage links that have both line number and line itself.
 
 ## TL;DR
-C-c
+Org mode:
+- C-c w
+```[[180::asd]]```
 
-## Features
+- C-u C-c w
+[[file:emacs-file2026-03-15.org::180::asd][asd]]
+
+res
 
 1) The command `org-links-store-extended' copies a link to the current file, at the current point.
 2) The syntax above is extended to include a few variants that are useful for linking into source code:
@@ -88,7 +93,6 @@ If installing from a GitHub repo (not yet in MELPA), specify the source:
 (require 'org-links)
 ;; opening for C-c C-o
 (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
-(add-hook 'org-open-link-functions #'org-links-fix-open-target-not-org)
 (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
 ;; copying
 (global-set-key (kbd "C-c w") #'org-links-store-extended)

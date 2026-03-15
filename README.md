@@ -4,13 +4,13 @@
 
 # emacs-org-links
 
-Org mode supports file links with line numbers and line via the following syntax:
-- `[[PATH::NUM][Link description]]`
-- `[[PATH::LINE][Link description]]`
+This package (org-links) provides facilities to help create and manage links that have both line number and line itself.
 
-There is `find-file-at-point` functions from ffap.el.
+## TL;DR
 
-This package (org-links) provides facilities to help create and manage these links:
+
+## Features
+
 1) The command `org-links-store-extended' copies a link to the current file, at the current point.
 2) The syntax above is extended to include a few variants that are useful for linking into source code:
 - `[[PATH::NUM::LINE]]`
@@ -28,13 +28,23 @@ First, we search for LINE, if not found we use NUM line number.
 
 `[[NUM-NUM]]` - used for region selection.
 
-Known issues: Org export not working properly with new formats.
+Known issue: Org export not working properly with new formats.
+
+## Org mode provide by default
+
+Org mode supports file links with line numbers and line via the following syntax:
+- `[[PATH::NUM][Link description]]`
+- `[[PATH::LINE][Link description]]`
+
+There is `find-file-at-point` functions from ffap.el for opening FILENAME.
 
 ## Behavior
 
-If links with linke number we use own search algo.
+If links with link number we use own search algo.
 
 Functions for storing links copy shortest links wihtout universtal and linkest links with it.
+
+First we search for target with <<>> and then for full line.
 
 ## Why?
 

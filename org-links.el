@@ -45,6 +45,8 @@
 ;; - [[PATH::NUM-NUM]]
 
 ;; For ex.  `[[file:./notes/warehouse.el::23::(defun alina (pic))]]`
+;;
+;; Known issue: Org export not working properly with new formats.
 
 ;; Also provided:
 ;; 1) The command `org-links-store-extended' copies a link to the
@@ -108,8 +110,6 @@
 ;; - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
 ;; - USDT (Tether) address: TVoXfYMkVYLnQZV3mGZ6GvmumuBfGsZzsN
 ;; - TON (Telegram) address: UQC8rjJFCHQkfdp7KmCkTZCb5dGzLFYe2TzsiZpfsnyTFt9D
-
-;; Known issues: Org export not working properly with new formats.
 
 ;;; TODO:
 ;; - each file: link should be generated with some description. (for export)
@@ -330,7 +330,8 @@ For usage with original Org `org-open-at-point-global' function."
            ;; - format: PATH::NUM::LINE
            ((or (derived-mode-p 'prog-mode)
                 (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode))
-                (derived-mode-p 'fundamental-mode))
+                ;; (derived-mode-p 'fundamental-mode)
+                )
             ;; store without fuzzy content and add line number."
             (if (and (bound-and-true-p buffer-file-name) arg)
                 (org-link-make-string
@@ -342,19 +343,7 @@ For usage with original Org `org-open-at-point-global' function."
                  (concat "file:" (buffer-file-name (buffer-base-buffer))
                          "::" (number-to-string (line-number-at-pos))
                          (if (string-empty-p cline) "" (concat "::" cline)))))
-
-                ;; without argument shorter NUM::LINE
-                ;; (number-to-string (line-number-at-pos)) "::" (org-links-org-link--normalize-string)))
-
-                      ;; (org-links-create-link (concat
-                      ;;                         "../" (file-relative-name (buffer-file-name (buffer-base-buffer))
-                      ;;                                             (file-name-directory (directory-file-name default-directory))) ; one level upper
-                      ;;                         ;; (substring link 2 (- (length link) 2))
-                      ;;                         "::" (number-to-string (line-number-at-pos))))
-
               ))
-              ;; (org-links-create-link (org-links--create-simple-at-point arg))))
-
            ;; - Org mode - at header
            ;; format: [[* header]]
            ((and (derived-mode-p 'org-mode)
@@ -368,61 +357,51 @@ For usage with original Org `org-open-at-point-global' function."
                               path
                               "::" (number-to-string (line-number-at-pos))
                               "::" (org-links-org-link--normalize-string))))
-                     ;; (org-link--file-link-to-here)
-                     ;; (let ((org-link-file-path-type nil))
-                       ;; (org-links--create-org-default-at-point)
-                   ;; else - short - "[[233::*ai <<asd>>]]"
+                     ;; else - short - "[[233::*ai <<asd>>]]"
                    (org-link-make-string
                     (concat (number-to-string (line-number-at-pos)) "::"
                             (substring-no-properties
                              (org-link-heading-search-string)))))))
            ;; ;; - Org mode
-           ((derived-mode-p 'org-mode)
-            (let ((cline (org-links-org-link--normalize-string)))
-              (if (and arg (bound-and-true-p buffer-file-name)) ; used: `org-link--file-link-to-here'
-                  ;; long
-                  (let ((desc (substring-no-properties (org-link--normalize-string (org-current-line-string) t)))
-                        (path (buffer-file-name (buffer-base-buffer))))
-                    (org-links-create-link
-                     (concat "file:"
-                             path
-                             "::" (number-to-string (line-number-at-pos))
-                             (if (string-empty-p cline) "" (concat "::" cline)))
-                     desc))
-                ;; else - short
-                (org-link-make-string
-                 (concat (number-to-string (line-number-at-pos)) "::"
-                         cline)))))
-
-           ;;  (substring-no-properties (org-store-link nil)))
+           ;; ((derived-mode-p 'org-mode)
+           ;;  (let ((cline (org-links-org-link--normalize-string)))
+           ;;    (if (and arg (bound-and-true-p buffer-file-name)) ; used: `org-link--file-link-to-here'
+           ;;        ;; long
+           ;;        (let ((desc (substring-no-properties (org-link--normalize-string (org-current-line-string) t)))
+           ;;              (path (buffer-file-name (buffer-base-buffer))))
+           ;;          (org-links-create-link
+           ;;           (concat "file:"
+           ;;                   path
+           ;;                   "::" (number-to-string (line-number-at-pos))
+           ;;                   (if (string-empty-p cline) "" (concat "::" cline)))
+           ;;           desc))
+           ;;      ;; else - short
+           ;;      (org-link-make-string
+           ;;       (concat (number-to-string (line-number-at-pos))
+           ;;               "::"
+           ;;               cline)))))
 
            ;; all modes - any line [[../emacs-org-links/org-links.el::367]]
            ;; format: - NUM::LINE and PATH::NUM::LINE
-           (t
-            (if (and arg (bound-and-true-p buffer-file-name))
-                    ;; todo: make link only for fuzzy link type.
-                    ;; ;; default
-                    ;; (org-links--create-org-default-at-point)
-                  ;; else
-
-                  (let ((org-link-file-path-type (if arg
-                                                     org-link-file-path-type
-                                                     ;;else
-                                                     'relative)) ; short
-                        (cur-line (org-links-org-link--normalize-string))) ; "" or "line"
+           (t ; for Org-mode normal line and  for any mode
+            (if (and arg (bound-and-true-p buffer-file-name)) ; same as: `org-link--file-link-to-here'
+                  (let ((cline (org-links-org-link--normalize-string))
+                        (desc (org-link--normalize-string (org-links-org-link--normalize-string) t))
+                        (path (buffer-file-name (buffer-base-buffer))))
+                      (when org-links--debug-flag
+                        (print (format "org-links-store-extended %s" desc)))
                     (org-links-create-link (concat
                                             "file:"
-                                            ;; (if arg
-                                                (buffer-file-name (buffer-base-buffer))
-                                              ;; ;; else
-                                              ;; (print (list "wtf2" (current-buffer) (file-relative-name (buffer-file-name (buffer-base-buffer)))))
-                                              ;; (file-relative-name (buffer-file-name (buffer-base-buffer))))
-                                            ;; (substring link 2 (- (length link) 2))
+                                            path
                                             "::" (number-to-string (line-number-at-pos))
-                                            (if (string-empty-p cur-line) "" (concat "::" cur-line)))))
-
-              ;; else - *scratch* buffer
-              (org-links-create-link (org-links--create-simple-at-point arg)))))))
+                                            (if (string-empty-p cline) "" (concat "::" cline)))
+                                           desc))
+              ;; else - short
+              (org-link-make-string
+               (concat (number-to-string (line-number-at-pos))
+                       "::"
+                       (org-links-org-link--normalize-string))))))))
+     ;; let: link
      (kill-new link)
      (princ link))))
 
@@ -476,7 +455,10 @@ Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
 
 (defun org-links-org-link--normalize-string (&optional string)
   "Compact spaces and trim leading to make link more compact.
+Works in not Org modes.
 Modified version of `org-link--normalize-string'.
+Dont escape [] characters, this is done with futher
+ `org-link-make-string' or `org-links-create-link'.
 Instead of much of removal we only compact spaces and remove leading.
 Instead of removing [1/3], [50%], leading ( and trailing ), spaces at
 the end of STRING, we just compress spaces in line and remove leading
@@ -493,8 +475,6 @@ spaces from STRING.  CONTEXT ignored."
       ;;                           "\\\\1"
       string)
      "[ \t\n\r]+")))
-
-(replace-regexp-in-string "\\([][]\\)" "\\\\\\1" "[")
 
 (defun org-links-org--unnormalize-string (string)
   "Create regex matching STRING with arbitrary whitespace.
@@ -573,30 +553,39 @@ Returns list of line numbers or empty list."
 
 (defun org-links--find-line (link-org-string &optional get-position)
   "Return line number that match LINK-ORG-STRING in buffer or nil.
+Search for target <<>> first, if not found search for whole line.
 If GET-POSITION is non-nil, then return position instead of line
 numbner."
   (when org-links--debug-flag
     (print (format "org-links--find-line1 %s" link-org-string)))
-  (let ((link (concat "^"
+  (let ((link (concat "<<"
                       (org-links-org--unnormalize-string (regexp-quote link-org-string))
-                      (when org-links-find-exact-flag "$")))
-        re)
+                      ">>")) ; 1): target
+        res)
     (when org-links--debug-flag
       (print (format "org-links--find-line2 %s" link)))
-    (setq re (org-links-find-first-two-exact-lines-in-buffer-optimized link get-position))
+    ;; search!
+    (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized link get-position))
+    (unless res
+      ;; 2): full line
+      (setq link (concat "^"
+                         (org-links-org--unnormalize-string (regexp-quote link-org-string))
+                         (when org-links-find-exact-flag "$")))
+      ;; search!
+      (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized link get-position)))
     (when org-links--debug-flag
-      (print (format "org-links--find-line3 %s" re)))
-    (if (eq (length re) 1) ;; found exactly one
-        (car re)
+      (print (format "org-links--find-line3 %s" res)))
+    (if (eq (length res) 1) ;; found exactly one
+        (car res)
       ;; else
       (unless org-links-silent
-        (if  (> (length re) 1)
-            (message "More than one line found, NUM is used. %s" re)
+        (if  (> (length res) 1)
+            (message "More than one line found, NUM is used. %s" res)
           ;; else
           (message "Line not found, NUM is used.")))
       nil)))
 
-(defun org-links--find-target (target-string)
+(defun org-lnd-target (target-string)
   "Return line number that match TARGET-STRING in buffer or nil.
 If GET-POSITION is non-nil, then return position instead of line
 numbner."
@@ -656,9 +645,11 @@ Recenter screen and Two times check visibility."
 (defun org-links--local-get-target-position-for-link (link)
   "For LINK string return (line-num-beg line-num-end) or (line-num-beg) or nil.
 Use current buffer for search line.
+Also profide fix for not-Org modes to able to search fuzzy.
 LINK is plain link without []."
   (when org-links--debug-flag
-    (print (format "org-links--local-get-target-position-for-link %s" link)))
+    (print (format "org-links--local-get-target-position-for-link %s %s"
+                   link (derived-mode-p 'org-mode))))
   (cond
    ;; NUM-NUM
    ((when-let* ((num1 (and (string-match org-links-num-num-regexp link)
@@ -686,7 +677,12 @@ LINK is plain link without []."
                          (org-links--find-line line))))
           (list n1 nil)
         ;; else
-        (list (string-to-number num1)))))))
+        (list (string-to-number num1)))))
+   ;; here: link may be a target (without <<>>) or  fuzzy link
+    ((and
+      (not (derived-mode-p 'org-mode))
+      (when-let ((num1 (org-links--find-line link)))
+        (list num1 nil))))))
 
 ;; (org-links--get-target-position-for-link "1-2::asd")
 ;; (org-links--get-target-position-for-link "480::")

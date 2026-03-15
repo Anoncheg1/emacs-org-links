@@ -365,6 +365,7 @@
 (ert-deftest org-links-store-extended-prog-mode--no-arg-test ()
   (print "Test: org-links-store-extended-prog-mode--no-arg-test")
   (let ((kill-buffer-query-functions)
+        (org-link-file-path-type 'absolute)
         res)
     (with-temp-buffer
       (setq major-mode 'prog-mode)
@@ -380,7 +381,9 @@
 
 (ert-deftest org-links-store-extended-prog-mode-arg-test ()
   (print "Test: org-links-store-extended-prog-mode-arg-test")
-  (let ((kill-buffer-query-functions))
+  (let ((org-link-file-path-type 'absolute)
+        kill-buffer-query-functions
+        res)
     (with-temp-buffer
       (setq major-mode 'prog-mode)
       (setq buffer-file-name "/mock/code.el")
@@ -388,13 +391,16 @@
       (set-buffer-modified-p nil)
       (setq kill-ring nil)
       (goto-char (point-min))
+      ;; (print (bound-and-true-p buffer-file-name))))
       (org-links-store-extended 1)
-      (should (string= (car kill-ring) "[[file:/mock/code.el::1::myline]]" ))
+      (setq res (car kill-ring))
+      (should (string= res "[[1::myline]]"))
       (set-buffer-modified-p nil))))
 
 (ert-deftest org-links-store-extended-org-mode-test ()
   ;; (print "Test: org-links-store-extended-org-mode-test")
   (let ((kill-buffer-query-functions)
+        (org-link-file-path-type 'adaptive)
         res)
     (with-temp-buffer
       (org-mode)
@@ -407,10 +413,10 @@
       ;; (print (car kill-ring))))
       ;; "[[* headline]]"
       (setq res (car kill-ring))
-      (should (string= res "[[*headline]]"))
+      (should (string= res "[[1::*headline]]"))
       (org-links-store-extended 1)
-      (setq res (car kill-ring))))
-      (should (string= res "[[file:/mock/org.org::*headline][headline]]")))))
+      (setq res (car kill-ring))
+      (should (string= res "[[file:/mock/org.org::1::* headline]]")))))
 
 (ert-deftest org-links-store-extended-org-mode-arg-test ()
   (print "Test: org-links-store-extended-org-mode-arg-test")

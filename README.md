@@ -7,7 +7,7 @@
 This package (org-links) provides facilities to help create and manage links that have both line number and line itself.
 
 ## TL;DR
-
+C-c
 
 ## Features
 

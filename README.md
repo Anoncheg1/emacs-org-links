@@ -10,7 +10,7 @@ This package (org-links) provides facilities to help create and manage links tha
 Org mode:
 - C-c w
 ```[[180::asd]]```
-asd
+
 - C-u C-c w
 ```[[file:~/file.org::13::asd][asd]]```
 

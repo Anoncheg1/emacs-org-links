@@ -7,6 +7,7 @@
 This package (org-links) provides facilities to help create and manage links that have both line number and line itself.
 
 ## TL;DR
+
 Org mode:
 - C-c w
 ```[[180::asd]]```
@@ -27,7 +28,6 @@ Region selected:
 
 - C-u C-c w
 ```[[file:~/file.org::13-17::asd][asd]]```
-
 
 ## Features
 

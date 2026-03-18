@@ -49,7 +49,7 @@
 (require 'org)
 (require 'org-links)
 (require 'image-dired)
-;;; - Help functions
+;; -=  Help functions
 (defun set-major-mode (mode)
   (funcall mode))
 
@@ -66,7 +66,15 @@
     (set-buffer-modified-p nil)
     (funcall thunk)))
 
-;;; - org-links-store-link-fallback
+(defmacro with-org-link-config (&rest body)
+  `(let ((org-execute-file-search-functions
+          (cons #'org-links-additional-formats
+                org-execute-file-search-functions)))
+     (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
+     (unwind-protect
+         (prog1 ,@body
+           (advice-remove 'org-open-file #'org-links-org-open-file-advice)))))
+;; -=  org-links-store-link-fallback
 ;; Helper usage already defined above
 (ert-deftest org-links-tests-store-link-fallback--thumbnail-mode ()
   (with-temp-buffer
@@ -142,34 +150,27 @@
       (org-links-store-link-fallback nil)
       (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]")))))
 ;; (kill-buffer buf))))
-;;; - advices activation
+;; -=  advices activation
 ;; ;; opening
 ;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
 ;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
 ;; ;; copying
 ;; (global-set-key (kbd "C-c w") #'org-links-store-extended)
 ;; (member 'org-links-additional-formats org-execute-file-search-functions)
-(defmacro with-org-link-config (&rest body)
-  `(let ((org-execute-file-search-functions
-          (cons #'org-links-additional-formats
-                org-execute-file-search-functions)))
-     (advice-add 'org-open-file :around #'org-links-org-open-file-advice)
-     (unwind-protect
-         (prog1 ,@body
-           (advice-remove 'org-open-file #'org-links-org-open-file-advice)))))
-;;; - org-links-create-link
-(ert-deftest org-links-tests-create-link ()
+
+;; -=  org-links-create-link
+(ert-deftest org-links-tests-tests-create-link ()
   (if (file-exists-p "~/sources/") ; local
       (should (string-equal (org-links-create-link "file:.././string") "[[file:~/sources/string]]"))
     ;; else - melpaziod
     (should (string-equal (org-links-create-link "file:.././string") "[[file:~/work/emacs-org-links/string]]"))))
-;;; - org-links-org--unnormalize-string
+;; -=  org-links-org--unnormalize-string
 ;; Utility for printable test output:
-(defun org-links--print-fail (desc val expected)
+(defun org-links-tests--print-fail (desc val expected)
   (format "Failed: %s\nGot: %S\nExpected: %S" desc val expected))
 
 ;; Improved ERT tests:
-(ert-deftest org-links-string-full-match-tests ()
+(ert-deftest org-links-tests-string-full-match-tests ()
   "Test coverage for org-links-string-full-match with different boundary cases."
   ;; Empty string & empty regexp
   (should (org-links-string-full-match "^$" ""))
@@ -186,7 +187,7 @@
   ;; Should allow empty target
   (should (org-links-string-full-match "^$" "")))
 
-(ert-deftest org-links-org-link--normalize-string-tests ()
+(ert-deftest org-links-tests-org-link--normalize-string-tests ()
   "Thorough whitespace and input coverage for normalization."
   (should (equal (org-links-org-link--normalize-string "    foo   ") "foo"))
   (should (equal (org-links-org-link--normalize-string "foo    bar\tbaz") "foo bar baz"))
@@ -202,7 +203,7 @@
   ;; Empty string
   (should (equal (org-links-org-link--normalize-string "") "")))
 
-(ert-deftest org-links-org--unnormalize-string-tests ()
+(ert-deftest org-links-tests-org--unnormalize-string-tests ()
   "Test generating regex with edge cases and non-standard inputs."
   (let ((norm "foo bar baz")
         (spaces "    foo    bar\tbaz"))
@@ -223,7 +224,7 @@
       (should (string-match rx "   café    bar"))
       (should-not (string-match rx "cafe bar")))))
 
-(ert-deftest org-links-roundtrip-property-tests ()
+(ert-deftest org-links-tests-roundtrip-property-tests ()
   "Test round-trip: original → normalize → regex → matches original (robust property)."
   (dolist (input '("   foo bar baz   "
                    "foo\tbar\tbaz"
@@ -245,7 +246,7 @@
       ;;   (should-not (string-match rx (concat norm " extra"))))
       )))
 
-(ert-deftest org-links-negatives-and-edge ()
+(ert-deftest org-links-tests-negatives-and-edge ()
   "Test negative cases for robustness."
   ;; Random non-matching input
   (let ((norm "foo bar"))
@@ -254,9 +255,9 @@
     ;; Should not match if words overlap improperly
     (should-not (string-match (org-links-org--unnormalize-string norm) "bar foo"))))
 
-;;; - search line
+;; -=  search line
 ;; Function 1: org-links--line-number-at-string-pos
-(ert-deftest org-links--line-number-at-string-pos-basic ()
+(ert-deftest org-links-tests--line-number-at-string-pos-basic ()
   (should (= (org-links--line-number-at-string-pos "foo\nbar\nbaz" 0) 1)) ;; start
   (should (= (org-links--line-number-at-string-pos "foo\nbar\nbaz" 4) 2)) ;; after first \n
   (should (= (org-links--line-number-at-string-pos "foo\nbar\nbaz" 8) 3)) ;; after second \n
@@ -264,7 +265,7 @@
   )
 
 ;; Function 2: org-links-find-first-two-exact-lines-in-buffer-optimized
-(ert-deftest org-links-find-first-two-exact-lines-in-buffer-optimized-basic ()
+(ert-deftest org-links-tests-find-first-two-exact-lines-in-buffer-optimized-basic ()
   (with-temp-buffer
     (insert "apple\nbanana\nbanana\ncarrot\nBANANA\nbanana\n")
     ;; Find line numbers with regex "banana"
@@ -283,7 +284,7 @@
 ;;     (org-links-find-first-two-exact-lines-in-buffer-optimized "^banana$" nil 1))
 
 ;; Function 3: org-links--find-line
-(ert-deftest org-links--find-line-basic ()
+(ert-deftest org-links-tests--find-line-basic ()
   (with-temp-buffer
     (insert "alpha\nlink1\nlink2\nlink1\nlink3\n")
     ;; Should return line number only if exactly one match
@@ -294,8 +295,9 @@
     (should (equal (org-links--find-line "foo") nil))
     )
   )
-;;; - org-open-file advice to other file
-(ert-deftest org-links-jump-num-line-test ()
+
+;; -=  org-open-file advice to other file
+(ert-deftest org-links-tests-jump-num-line-test ()
   (print "Test: org-links-jump-num-line-test")
   (let ((kill-buffer-query-functions))
     (with-temp-buffer
@@ -328,9 +330,9 @@
        (setq kill-ring nil)
        (set-buffer-modified-p nil)))))
 
-;;; - store link
+;; -=  store link
 ;; Mocking necessary dependencies
-(defmacro with-mocks (&rest body)
+(defmacro org-links-tests-with-mocks (&rest body)
   `(cl-letf (((symbol-function 'image-dired-original-file-name)
               (lambda () "/mock/pic.jpg"))
              ;; ((symbol-function 'org-links-create-link)
@@ -342,27 +344,27 @@
              )
      ,@body))
 
-(ert-deftest org-links-store-extended-image-thumbnail-test ()
+(ert-deftest org-links-tests-store-extended-image-thumbnail-test ()
   (print "Test: org-links-store-extended-image-thumbnail-test")
   (with-temp-buffer
-    (with-mocks
+    (org-links-tests-with-mocks
      ;; Simulate mode
      (setq major-mode 'image-dired-thumbnail-mode)
      (setq kill-ring nil)
      (org-links-store-extended nil)
      (should (string= (car kill-ring) "file:/mock/pic.jpg"))(set-buffer-modified-p nil))))
 
-(ert-deftest org-links-store-extended-image-mode-test ()
+(ert-deftest org-links-tests-store-extended-image-mode-test ()
   (print "Test: org-links-store-extended-image-mode-test")
   (with-temp-buffer
-    (with-mocks
+    (org-links-tests-with-mocks
      (setq major-mode 'image-dired-image-mode)
      (setq buffer-file-name "/mock/image.png")
      (setq kill-ring nil)
      (org-links-store-extended nil)
      (should (string= (car kill-ring) "file:/mock/image.png"))(set-buffer-modified-p nil))))
 
-(ert-deftest org-links-store-extended-prog-mode--no-arg-test ()
+(ert-deftest org-links-tests-store-extended-prog-mode--no-arg-test ()
   (print "Test: org-links-store-extended-prog-mode--no-arg-test")
   (let ((kill-buffer-query-functions)
         (org-link-file-path-type 'absolute)
@@ -379,7 +381,7 @@
       (should (string-match-p "[[\[\[\.\..*/mock/code.el::1]]" res))
       (set-buffer-modified-p nil))))
 
-(ert-deftest org-links-store-extended-prog-mode-arg-test ()
+(ert-deftest org-links-tests-store-extended-prog-mode-arg-test ()
   (print "Test: org-links-store-extended-prog-mode-arg-test")
   (let ((org-link-file-path-type 'absolute)
         kill-buffer-query-functions
@@ -397,7 +399,7 @@
       (should (string= res "[[1::myline]]"))
       (set-buffer-modified-p nil))))
 
-(ert-deftest org-links-store-extended-org-mode-test ()
+(ert-deftest org-links-tests-store-extended-org-mode-test ()
   ;; (print "Test: org-links-store-extended-org-mode-test")
   (let ((kill-buffer-query-functions)
         (org-link-file-path-type 'adaptive)
@@ -407,18 +409,13 @@
       (setq buffer-file-name "/mock/org.org")
       (insert "* headline")
       (set-buffer-modified-p nil)
-      (setq kill-ring nil)
       (goto-char (point-min))
-      (org-links-store-extended nil)
-      ;; (print (car kill-ring))))
-      ;; "[[* headline]]"
-      (setq res (car kill-ring))
-      (should (string= res "[[1::*headline]]"))
-      (org-links-store-extended 1)
-      (setq res (car kill-ring))
+      (setq res (org-links-store-extended nil))
+      (should (string= res "[[1::* headline]]"))
+      (setq res (org-links-store-extended 1))
       (should (string= res "[[file:/mock/org.org::1::* headline][headline]]")))))
 
-(ert-deftest org-links-store-extended-org-mode-arg-test ()
+(ert-deftest org-links-tests-store-extended-org-mode-arg-test ()
   (print "Test: org-links-store-extended-org-mode-arg-test")
   (let ((kill-buffer-query-functions)
         res)
@@ -434,7 +431,7 @@
       (should (string= res "[[file:/mock/org.org::1::* headline][headline]]"))
       (set-buffer-modified-p nil))))
 
-(ert-deftest org-links-store-extended-region-normal ()
+(ert-deftest org-links-tests-store-extended-region-normal ()
   (print "Test: org-links-store-extended-region-normal")
   (let ((kill-buffer-query-functions))
     (with-temp-buffer
@@ -451,8 +448,8 @@
        (should (string-match-p "[[\[\[\.\..*/mock/test.txt::1-4::foo]]"
                                (car kill-ring)))))))
 
-;;; - store link - region - skip empty lines
-(ert-deftest org-links-store-extended-region-empty-line ()
+;; -=  store link - region - skip empty lines
+(ert-deftest org-links-tests-store-extended-region-empty-line ()
   (print "Test: org-links-store-extended-region-empty-line")
   (let ((kill-buffer-query-functions))
     (with-temp-buffer
@@ -471,8 +468,8 @@
                 "\[\[\.\..*/mock/test.txt::4-7::foo]]"
                 (car kill-ring)))))))
 
-;;; - store link - region - skip comments in programming mode
-(ert-deftest org-links-store-extended-region-programming-mode ()
+;; -=  store link - region - skip comments in programming mode
+(ert-deftest org-links-tests-store-extended-region-programming-mode ()
  (let ((kill-buffer-query-functions))
   (with-temp-buffer
       (with-org-link-config
@@ -487,11 +484,76 @@
          (should (string-match-p
                   "\[\[\.\..*/mock/test\.txt::5-8::foo]]"
                   (car kill-ring)))))))
+;; -= name of block and target: create link
+(ert-deftest org-links-tests-block-create-by-name-and-target ()
+ (let ((kill-buffer-query-functions)
+       res
+       p1 p2)
+  (with-temp-buffer
+    (with-org-link-config
+     (org-mode)
+     (setq buffer-file-name "/mock/test.org")
+     (insert "#+name: asd1\n")
+     (setq p1 (point))
+     (insert "#+begin_src elisp
+#+end_src
+sssd <<asd2>>")
 
+     (setq p2 (point))
+     (set-buffer-modified-p nil)
+     ;; - #+begin by name
+     (goto-char p1)
+     (setq res (org-links-store-extended nil))
+     (should (string-equal res
+                           "[[2::asd1]]"))
+     ;; - #+begin by name - with arg
+     ;; (print "as")
+     (setq res (org-links-store-extended 1))
+     (should (string-equal res
+                           "[[file:/mock/test.org::2::asd1][asd1]]"))
+     ;; - at <<taget>>
+     (goto-char p2)
+     (backward-char 3)
+     (setq res (org-links-store-extended nil))
+     (should (string-equal res
+                           "[[4::asd2]]"))
+     ;; - at <<taget>> - with arg
+     (setq res (org-links-store-extended 1))
+     (should (string-equal res
+                           "[[file:/mock/test.org::4::asd2][asd2]]"))
+     ))))
 
-;;; - create-link-for-region
+;; -= name of block and target: jump
+(ert-deftest org-links-tests-jump-target-srcname1 ()
+ (let ((kill-buffer-query-functions))
+  (with-temp-buffer
+    (with-org-link-config
+     (org-mode)
+     (insert "[[asd]]
+#+name: asd
+#+begin_src elisp
+#+end_src
+ss
+<<asd>>")
+     (goto-char 1)
+     (org-open-at-point)
+     (should (= (point) 52))))))
 
-;;; provide
+(ert-deftest org-links-tests-jump-target-srcname2 ()
+ (let ((kill-buffer-query-functions))
+  (with-temp-buffer
+    (with-org-link-config
+     (org-mode)
+     (insert "[[asd]]
+#+name: asd
+#+begin_src elisp
+#+end_src
+")
+     (goto-char 1)
+     (org-open-at-point)
+     (should (= (point) 9))))))
+
+;; -= provide
 (provide 'org-links-tests)
 
 ;;; org-links-tests.el ends here

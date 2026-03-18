@@ -781,8 +781,7 @@ LINK is plain link without []."
 
     ((when org-links--debug-flag
       (print (format "org-links--local-get-target-position-for-link failed"))
-      nil))
-    ))
+      nil))))
 
 ;; (org-links--get-target-position-for-link "1-2::asd")
 ;; (org-links--get-target-position-for-link "480::")

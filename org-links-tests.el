@@ -289,8 +289,8 @@
     (insert "alpha\nlink1\nlink2\nlink1\nlink3\n")
     ;; Should return line number only if exactly one match
     (should (equal (org-links--find-line "link2") 3)) ; line number 3
-    ;; ;; Multiple matches => nil
-    (should (equal (org-links--find-line "link1") nil))
+    ;; ;; Multiple matches => fist
+    (should (equal (org-links--find-line "link1") 2))
     ;; No match => nil
     (should (equal (org-links--find-line "foo") nil))))
 

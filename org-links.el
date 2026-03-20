@@ -644,50 +644,57 @@ Returns list of line numbers or empty list."
               (setq ln (1+ ln))))
             (nreverse results2))))))
 
-(defun org-links--find-line (link-org-string &optional only-line get-position)
+(defun org-links--find-line (link-org-string &optional enable-target get-position)
   "Return line number that match LINK-ORG-STRING in buffer or nil.
-Search for target <<>> first, unless ONLY-LINE is set, if not found
- search for whole line.
-If GET-POSITION is non-nil, then return position instead of line
-number.
-Return one number or list of numbers or nil"
+When ENABLE-TARGET, then Search <<>> and #+NAME keywrord first, if not
+ found search for whole line.
+If GET-POSITION is non-nil, then return position instead of line number.
+Return one number or list of numbers or nil."
   (when org-links--debug-flag
     (print (format "org-links--find-line1 %s" link-org-string)))
   ;; repare search regex
-  (let ((link-target (concat "<<"
-                             (org-links-org--unnormalize-string (regexp-quote link-org-string))
-                             ">>"))
-        (link-line (concat "^"
+  (let ((link-line (concat "^"
                            (org-links-org--unnormalize-string (regexp-quote link-org-string))
                            (when org-links-find-exact-flag "$")))
+        (link-target (concat "<<"
+                             (org-links-org--unnormalize-string (regexp-quote link-org-string))
+                             ">>"))
+        (link-name (format "^[ \t]*#\\+NAME: +%s[ \t]*$" (regexp-quote link-org-string)))
         res)
 
-    ;; search <<target>>
-    (unless only-line
-      (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized link-target
-                                                                          get-position))
+    (when enable-target
+      ;; search <<target>>
+      (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized
+                 link-target get-position))
       (when org-links--debug-flag
-        (print (format "org-links--find-line2\n%s\n%s" link-target res))))
+        (print (format "org-links--find-line2\n%s\n%s" link-target res)))
+      ;; search #+NAME:
+      (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized
+                 link-name get-position))
+      (when org-links--debug-flag
+        (print (format "org-links--find-line3\n%s\n%s" link-name res))))
+
     (unless res
       ;; search LINE
-      (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized link-line
-                                                                          get-position))
+      (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized
+                 link-line get-position))
       (when org-links--debug-flag
-        (print (format "org-links--find-line3\n%s\n%s" link-line res))))
-    (unless (or res only-line)
-      ;; search LINE with Org
-      (let ((ln-before (line-number-at-pos)))
-        (save-excursion
-          (org-with-wide-buffer
-           (let ((found (org-link-search link-org-string)))
-             (when org-links--debug-flag
-               (print (format "org-links--find-line3 %s" found)))
-             (when (and (eq found 'dedicated)
-                        (not (= (line-number-at-pos) ln-before))) ; found?
-               (setq res (list (if get-position
-                         (point)
-                       ;; else
-                       (line-number-at-pos))))))))))
+        (print (format "org-links--find-line4\n%s\n%s" link-line res))))
+
+    ;; (unless (or res only-line)
+    ;;   ;; search LINE with Org
+    ;;   (let ((ln-before (line-number-at-pos)))
+    ;;     (save-excursion
+    ;;       (org-with-wide-buffer
+    ;;        (let ((found (org-link-search link-org-string)))
+    ;;          (when org-links--debug-flag
+    ;;            (print (format "org-links--find-line3 %s" found)))
+    ;;          (when (and (eq found 'dedicated)
+    ;;                     (not (= (line-number-at-pos) ln-before))) ; found?
+    ;;            (setq res (list (if get-position
+    ;;                      (point)
+    ;;                    ;; else
+    ;;                    (line-number-at-pos))))))))))
 
     (if (eq (length res) 1) ;; found exactly one
         (car res)
@@ -778,7 +785,7 @@ LINK is plain link without []."
                 (num2 (string-to-number num2))
                 (line (match-string 3 link)))
       ;; find line
-      (if-let* ((n1 (org-links--find-line line t)) ; skip search <<target>>
+      (if-let* ((n1 (org-links--find-line line)) ; search <<target>>
                 (n2 (+ n1 (- num2 num1))))
           (list n1 n2)
         ;; else num1-num2
@@ -788,17 +795,16 @@ LINK is plain link without []."
 	                   (match-string 1 link)))
 	        (line (match-string 2 link))) ; may be ""
       (if-let* ((n1 (and (not (string-empty-p line))
-                         (org-links--find-line line)))) ; fallback to org-links-search
+                         (org-links--find-line line t)))) ; fallback to org-links-search
           (list n1 nil)
         ;; else - fail to find line, return NUM
         (list (string-to-number num1)))))
-   ;; here: link may be a target (without <<>>) or  fuzzy link
-   ((and
-     (not (derived-mode-p 'org-mode))
-     (when-let ((num1 (org-links--find-line link)))
-       (list num1 nil))))
-
-    ((when org-links--debug-flag
+   ;; LINE - may be a target (without <<>>) or  fuzzy link
+   ((and (not (derived-mode-p 'org-mode))
+         (when-let ((num1 (org-links--find-line link t)))
+           (list num1 nil))))
+   ;; t - debug
+   ((when org-links--debug-flag
       (print (format "org-links--local-get-target-position-for-link failed"))
       nil))))
 

@@ -649,27 +649,46 @@ Returns list of line numbers or empty list."
 Search for target <<>> first, unless ONLY-LINE is set, if not found
  search for whole line.
 If GET-POSITION is non-nil, then return position instead of line
-numbner."
+number.
+Return one number or list of numbers or nil"
   (when org-links--debug-flag
     (print (format "org-links--find-line1 %s" link-org-string)))
-  (let ((link (concat "<<"
-                      (org-links-org--unnormalize-string (regexp-quote link-org-string))
-                      ">>")) ; 1): target
+  ;; repare search regex
+  (let ((link-target (concat "<<"
+                             (org-links-org--unnormalize-string (regexp-quote link-org-string))
+                             ">>"))
+        (link-line (concat "^"
+                           (org-links-org--unnormalize-string (regexp-quote link-org-string))
+                           (when org-links-find-exact-flag "$")))
         res)
-    (when org-links--debug-flag
-      (print (format "org-links--find-line2 %s" link)))
+
     ;; search <<target>>
     (unless only-line
-      (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized link get-position)))
+      (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized link-target
+                                                                          get-position))
+      (when org-links--debug-flag
+        (print (format "org-links--find-line2\n%s\n%s" link-target res))))
     (unless res
-      ;; 2): full line
-      (setq link (concat "^"
-                         (org-links-org--unnormalize-string (regexp-quote link-org-string))
-                         (when org-links-find-exact-flag "$")))
       ;; search LINE
-      (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized link get-position)))
-    (when org-links--debug-flag
-      (print (format "org-links--find-line3 %s" res)))
+      (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized link-line
+                                                                          get-position))
+      (when org-links--debug-flag
+        (print (format "org-links--find-line3\n%s\n%s" link-line res))))
+    (unless (or res only-line)
+      ;; search LINE with Org
+      (let ((ln-before (line-number-at-pos)))
+        (save-excursion
+          (org-with-wide-buffer
+           (let ((found (org-link-search link-org-string)))
+             (when org-links--debug-flag
+               (print (format "org-links--find-line3 %s" found)))
+             (when (and (eq found 'dedicated)
+                        (not (= (line-number-at-pos) ln-before))) ; found?
+               (setq res (list (if get-position
+                         (point)
+                       ;; else
+                       (line-number-at-pos))))))))))
+
     (if (eq (length res) 1) ;; found exactly one
         (car res)
       ;; else
@@ -769,15 +788,15 @@ LINK is plain link without []."
 	                   (match-string 1 link)))
 	        (line (match-string 2 link))) ; may be ""
       (if-let* ((n1 (and (not (string-empty-p line))
-                         (org-links--find-line line))))
+                         (org-links--find-line line)))) ; fallback to org-links-search
           (list n1 nil)
-        ;; else
+        ;; else - fail to find line, return NUM
         (list (string-to-number num1)))))
    ;; here: link may be a target (without <<>>) or  fuzzy link
-    ((and
-      (not (derived-mode-p 'org-mode))
-      (when-let ((num1 (org-links--find-line link)))
-        (list num1 nil))))
+   ((and
+     (not (derived-mode-p 'org-mode))
+     (when-let ((num1 (org-links--find-line link)))
+       (list num1 nil))))
 
     ((when org-links--debug-flag
       (print (format "org-links--local-get-target-position-for-link failed"))
@@ -832,6 +851,19 @@ Return t if link was processed or nil."
         (when num2
           (org-links-num-num-enshure-num2-visible num2))
         t)))
+
+(defun org-links-org-link-search (search)
+  "Apply `org-link-search, suppress errors and give warning for two resutls."
+  (save-excursion
+    (save-restriction
+      ;; (with-restriction (line-end-position) (point-max)
+      ;;   (save-excursion
+      (condition-case nil
+          ;; (with-restriction (line-end-position) (point-max)
+          (let ((org-link-search-must-match-exact-headline t))
+            (org-link-search search nil t))
+        (error nil)
+        (user-error nil)))))
 
 
 ;; (add-hook 'org-execute-file-search-functions #'org-links-additional-formats)
@@ -906,17 +938,8 @@ Optional argument ARGS is `org-open-file' arguments."
          (t ;; else - classic Org format
           ;; Addon to Org logic: signal if two targets exist
           (apply orig-fun args)
-          (save-excursion
-	    (save-restriction
-          ;; (with-restriction (line-end-position) (point-max)
-          ;;   (save-excursion
-              (condition-case nil
-                  ;; (with-restriction (line-end-position) (point-max)
-                    (let ((org-link-search-must-match-exact-headline t))
-                      (when (org-link-search search nil t)
-                        (message "Warning: Two targets exist for this link.")))
-                (error nil)
-                (user-error nil))))))
+          (when (org-links-org-link-search search)
+              (message "Warning: Two targets exist for this link."))))
       ;; else - no part after ::
       (apply orig-fun args))))
 

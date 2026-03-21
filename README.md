@@ -169,9 +169,14 @@ Those functions (C-c C-o) call `org-open-file` and `org-link-open`, we modify be
 - add hook to `org-execute-file-search-functions` that called from `org-link-search` function that called for short links.
 - and to `org-open-link-functions`, called from `org-link-open` - Fix for case for not Org mode to find <<target1>> links.
 
-
 - org-links-org-open-file-advice - called for :file
 - org-links-additional-formats -> org-links--local-get-target-position-for-link - called for short links
+
+### Normalization and unnormalization
+`org-links-store-extended` create link for current string, it use `org-links-org-link--normalize-string` to make it compact and special syntax is used for Org headers.
+
+`org-links-org--unnormalize-string` is used in `org-links--find-line` to prepare link for search..
+
 ## Other packages
 - Navigation in Dired, Packages, Buffers modes https://github.com/Anoncheg1/firstly-search
 - Search with Chinese	https://github.com/Anoncheg1/pinyin-isearch

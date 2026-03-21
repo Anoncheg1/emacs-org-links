@@ -147,6 +147,22 @@ Search ignore first empty first characters in all case."
 
 (defvar org-links--debug-flag nil)
 
+(defvar org-links-num-num-regexp "^\\([0-9]+\\)-\\([0-9]+\\)$"
+  "Links ::NUM-NUM.")
+
+;; (defvar org-links-num-num-re (rx (seq "[["
+;; 	           ;; URI part: match group 1.
+;; 	           (group (+ digit)) "-" (group (+ digit))
+;; 		   ;; Description (optional): match group 2.
+;; 		   (opt "[" (group (+? anything)) "]")
+;; 		   "]")))
+
+(defvar org-links-num-num-line-regexp "^\\([0-9]+\\)-\\([0-9]+\\)::\\(.*\\)$"
+  "Links ::NUM-NUM::LINE.")
+(defvar org-links-num-line-regexp "^\\([0-9]+\\)::\\(.?+\\)$"
+  "Links ::NUM::LINE.")
+
+
 ;; -=  functions
 (defsubst org-links-string-full-match (regexp string)
   "Return t if REGEXP fully match STRING."
@@ -418,20 +434,20 @@ For usage with original Org `org-open-at-point-global' function."
            ;;            (if (string-empty-p cline) "" (concat "::" cline)))))))
 
            ;; - Org mode - at header. Format: [[* header]], same to `org-link-heading-search-string'
-           ((and (derived-mode-p 'org-mode)
-                 (org-at-heading-p)
-                 (progn
-                   (when org-links--debug-flag
-                     (print (format "org-links-store-extended at Org-header")))
-                   (org-links-store-extended-universal (concat "*"
-                                                               (let* ((s (org-links-org-link--normalize-string)) ; or (substring-no-properties (org-link-heading-search-string))
-                                                                      (pos (string-match " +" s)))
-                                                                 (if pos
-                                                                     (substring s (match-end 0))
-                                                                   s)))
-                                                               arg
-                                                               (org-link--normalize-string
-                                                                (org-get-heading t t t t))))))
+            ((and (derived-mode-p 'org-mode)
+                  (org-at-heading-p))
+
+             (when org-links--debug-flag
+               (print (format "org-links-store-extended at Org-header")))
+             (org-links-store-extended-universal (concat "*"
+                                                         (let* ((s (org-links-org-link--normalize-string)) ; or (substring-no-properties (org-link-heading-search-string))
+                                                                (pos (string-match " +" s)))
+                                                           (if pos
+                                                               (substring s (match-end 0))
+                                                             s)))
+                                                 arg
+                                                 (org-link--normalize-string
+                                                  (org-get-heading t t t t))))
 
            ;; - Org #+name
            ((and (derived-mode-p 'org-mode)
@@ -568,7 +584,6 @@ Return string"
                             (line-beginning-position)
                             (line-end-position)))))
     (replace-regexp-in-string
-    (replace-regexp-in-string
      (rx (one-or-more (any " \t")))
      " "
      (string-trim
@@ -580,32 +595,41 @@ Return string"
 
 (defun org-links-org--unnormalize-string (string)
   "Create regex matching STRING with arbitrary whitespace.
-Reverse of `org-links-org-link--normalize-string' and to [[422::(org-at-heading-p)]].
-Add spaces at begin of line and replace spaces with any number of spaces
-or tabs in the middle.
+STRING should not contain regex expressions, be quoted with
+ `regexp-quote'.
+Do 1) replace spaces with regex for spaces of any lenght.
+2) for header make regex for  proper Org headers, for line surround with
+ possible spaces.
+Reverse of `org-links-org-link--normalize-string' and to
+ [[422::(org-at-heading-p)]].  Add spaces at begin of line and replace
+ spaces with any number of spaces or tabs in the middle.
 If STRING starts with * character without space after, it is header
- search.
-To create proper regex, string should be first be processed with
-`regexp-quote'."
+ search."
   ;; if it is a heading line "*word" - replace with regex to find headers
   ;; (print (list "org-links-org--unnormalize-string1" string))
   ;; spaces may be any lenghth
-  (setq string (replace-regexp-in-string " +" "[ \t]+" (string-trim string)))
+  (setq string (string-trim string))
+
   ;; header or not
-  (if (string-match "^[\\]?\\*[^ *]" string) ; quoted or not
-        (concat org-outline-regexp (substring string (1- (match-end 0))))
+  (if (string-match "^[\\]?\\*+ ?[^ *]" string) ; quoted or not
+      ;; (progn
+        (setq string (concat org-outline-regexp
+                             (replace-regexp-in-string " +" "[ \t]+" string nil nil nil (1- (match-end 0)))))
+                             ;; (substring string (1- (match-end 0)))
+        ;; (setq string (replace-regexp-in-string " +" "[ \t]+" string nil nil nil 4))) ; (1+ (length org-outline-regexp))
     ;; else
     ;; (print (list "org-links-org--unnormalize-string2 not header" string))
-    (concat "[ \t]*" string "[ \t]*")))
+    (concat "[ \t]*" (replace-regexp-in-string " +" "[ \t]+" string) "[ \t]*")))
 
 (unless (and
+         (string-equal (org-links-org--unnormalize-string "* asd") "\\*+ asd")
+         (string-equal (org-links-org--unnormalize-string "**asd") "\\*+ asd")
          (string-equal (org-links-org--unnormalize-string "*asd") "\\*+ asd")
          (string-equal (org-links-org--unnormalize-string "*as sasd") "\\*+ as[ 	]+sasd")
          (string-equal (org-links-org--unnormalize-string "\\*asd") "\\*+ asd")
          (string-equal (org-links-org--unnormalize-string "\\*as d") "\\*+ as[ 	]+d")
          (string-equal (org-links-org--unnormalize-string "as   asdd") "[ 	]*as[ 	]+asdd[ 	]*")
-         (string-equal (org-links-org--unnormalize-string "asd") "[ 	]*asd[ 	]*")
-         )
+         (string-equal (org-links-org--unnormalize-string "asd") "[ 	]*asd[ 	]*"))
   (error "org-links-org--unnormalize-string test"))
 ;; small tests:
 
@@ -753,21 +777,6 @@ Return one number or nil."
 
 
 ;; -=  Open link - help functions and variablses
-
-(defvar org-links-num-num-regexp "^\\([0-9]+\\)-\\([0-9]+\\)$"
-  "Links ::NUM-NUM.")
-
-;; (defvar org-links-num-num-re (rx (seq "[["
-;; 	           ;; URI part: match group 1.
-;; 	           (group (+ digit)) "-" (group (+ digit))
-;; 		   ;; Description (optional): match group 2.
-;; 		   (opt "[" (group (+? anything)) "]")
-;; 		   "]")))
-
-(defvar org-links-num-num-line-regexp "^\\([0-9]+\\)-\\([0-9]+\\)::\\(.*\\)$"
-  "Links ::NUM-NUM::LINE.")
-(defvar org-links-num-line-regexp "^\\([0-9]+\\)::\\(.?+\\)$"
-  "Links ::NUM::LINE.")
 
 (defun org-links-num-num-enshure-num2-visible (num2)
   "For NUM-NUM format, we enshure that NUM is visible when jump.

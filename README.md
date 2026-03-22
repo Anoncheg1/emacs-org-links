@@ -4,7 +4,7 @@
 
 # emacs-org-links
 
-This package (org-links) provides facilities to help create and manage links that have both line number and line itself.
+This package (org-links) provides facilities to help create and manage Org-mode links, add new link types, have speed optimization for large files. Have facility to message if two lines was found, control wheter to search for full line or by the begining of it.
 
 ## TL;DR
 
@@ -60,11 +60,9 @@ There is `find-file-at-point` functions from ffap.el for opening FILENAME.
 
 ## Behavior
 
-If links with link number we use own search algo.
+Create link depending on context, make it short and copy to kill-ring.
 
-Functions for storing links copy shortest links wihtout universtal and linkest links with it.
-
-First we search for target with <<>> and then for full line.
+Depending on link type we search LINE and use NUM if LINE was not found, `<<target>>`, #+name, and for full line or header.
 
 ## Why?
 
@@ -101,7 +99,7 @@ If installing from a GitHub repo (not yet in MELPA), specify the source:
 ;; Requires straight.el.
 ```
 
-
+# Configuration
 ## Simple configuration
 
 ```elisp
@@ -116,9 +114,9 @@ If installing from a GitHub repo (not yet in MELPA), specify the source:
 ## Advanced configuration
 
 ```elisp
-(defun org-links-store-link-fallback (&optional arg)
-  "Copy this function from org-links.el file.
-Used, when org-links package is not installed.")
+;; (defun org-links-store-link-fallback (&optional arg)
+;; Copy this function from org-links.el file to your ~/.emacs config.
+;; -----------
 
 (add-to-list 'load-path "/home/g/sources/emacs-org-links")
 (if (not (require 'org-links nil 'noerror))
@@ -157,8 +155,7 @@ Used, when org-links package is not installed.")
 ```
 
 ## How this package works
-
-Provided function for copying link to kill ring with additional format for programming mode.
+Provided new function `org-links-store-extended` to create and copy link to clipboard kill-ring and we add advices and hooks to handle opeing of new links types.
 
 Org use:
 1) org-open-at-point
@@ -172,12 +169,30 @@ Those functions (C-c C-o) call `org-open-file` and `org-link-open`, we modify be
 - org-links-org-open-file-advice - called for :file
 - org-links-additional-formats -> org-links--local-get-target-position-for-link - called for short links
 
-### Normalization and unnormalization
+## Normalization and unnormalization
+
 `org-links-store-extended` create link for current string, it use `org-links-org-link--normalize-string` to make it compact and special syntax is used for Org headers.
 
-`org-links-org--unnormalize-string` is used in `org-links--find-line` to prepare link for search..
+`org-links-org--unnormalize-string` is used in `org-links--find-line` to prepare link for search.
+
+## Trivial copying of Org link to clipboard
+If you are looking for simpliest way to just copy Org link to clipboard kill ring, here is Elisp function.
+
+Add this function to your config, here is binding of it to key also.
+```elisp
+(defun org-copy-link-to-kill-ring ()
+  "Store current Org link and copy it to kill-ring programmatically."
+  (interactive)
+  (let ((link (org-store-link nil)))
+    (when link
+      (kill-new link)
+      (message "Copied link: %s" link))))
+
+(global-set-key (kbd "C-c C-w") #'org-copy-link-to-kill-ring)
+```
 
 ## Other packages
+
 - Navigation in Dired, Packages, Buffers modes https://github.com/Anoncheg1/firstly-search
 - Search with Chinese	https://github.com/Anoncheg1/pinyin-isearch
 - Ediff fix		https://github.com/Anoncheg1/ediffnw

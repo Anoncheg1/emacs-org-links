@@ -3,7 +3,7 @@
 ;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
 ;; Keywords: org, text, hypermedia, url
 ;; URL: https://github.com/Anoncheg1/emacs-org-links
-;; Version: 0.2
+;; Version: 0.4
 ;; Created: 30 Aug 2025
 ;; Package-Requires: ((emacs "27.2"))
 ;; SPDX-License-Identifier: AGPL-3.0-or-later

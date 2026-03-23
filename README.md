@@ -4,6 +4,8 @@
 
 # emacs-org-links
 
+**Version 0.4**
+
 This package (org-links) provides facilities to help create and manage Org-mode links, add new link types, have speed optimization for large files. Have facility to message if two lines was found, control wheter to search for full line or by the begining of it.
 
 ## TL;DR

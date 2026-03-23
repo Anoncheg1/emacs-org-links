@@ -614,6 +614,30 @@ ss
      (org-open-at-point)
      (should (= (point) 9))))))
 
+;; -= org-links-org-link--normalize-string
+(ert-deftest org-links-tests-normalize-string1 ()
+          (should (string-equal (org-links-org--unnormalize-string "* asd") "\\*+ asd"))
+          (should (string-equal (org-links-org--unnormalize-string "**asd") "\\*+ asd"))
+          (should (string-equal (org-links-org--unnormalize-string "*asd") "\\*+ asd"))
+          (should (string-equal (org-links-org--unnormalize-string "*as sasd") "\\*+ as[ 	]+sasd"))
+          (should (string-equal (org-links-org--unnormalize-string "\\*asd") "\\*+ asd"))
+          (should (string-equal (org-links-org--unnormalize-string "\\*as d") "\\*+ as[ 	]+d"))
+          (should (string-equal (org-links-org--unnormalize-string "as   asdd") "[ 	]*as[ 	]+asdd[ 	]*"))
+          (should (string-equal (org-links-org--unnormalize-string "asd") "[ 	]*asd[ 	]*")))
+
+
+(ert-deftest org-links-tests-normalize-string2 ()
+  (should (string-match (let ((string "    ;;     	    (setq string (org-trim (substring string 1 -1))))"))
+                           (org-links-org-link--normalize-string string))
+                         ";; (setq string (org-trim (substring string 1 -1))))"))
+
+  (let ((string "    ;;     	    (setq string (org-trim (substring string 1 -1))))"))
+    (should (org-links-string-full-match
+              (org-links-org--unnormalize-string
+               (regexp-quote
+                (org-links-org-link--normalize-string string)))
+              string))))
+
 ;; -= provide
 (provide 'org-links-tests)
 

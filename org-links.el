@@ -639,31 +639,6 @@ If STRING starts with * character without space after, it is header
     ;; (print (list "org-links-org--unnormalize-string2 not header" string))
     (concat "[ \t]*" (replace-regexp-in-string " +" "[ \t]+" string) "[ \t]*")))
 
-(unless (and
-         (string-equal (org-links-org--unnormalize-string "* asd") "\\*+ asd")
-         (string-equal (org-links-org--unnormalize-string "**asd") "\\*+ asd")
-         (string-equal (org-links-org--unnormalize-string "*asd") "\\*+ asd")
-         (string-equal (org-links-org--unnormalize-string "*as sasd") "\\*+ as[ 	]+sasd")
-         (string-equal (org-links-org--unnormalize-string "\\*asd") "\\*+ asd")
-         (string-equal (org-links-org--unnormalize-string "\\*as d") "\\*+ as[ 	]+d")
-         (string-equal (org-links-org--unnormalize-string "as   asdd") "[ 	]*as[ 	]+asdd[ 	]*")
-         (string-equal (org-links-org--unnormalize-string "asd") "[ 	]*asd[ 	]*"))
-  (error "org-links-org--unnormalize-string test"))
-;; small tests:
-
-(if (not (string-match (let ((string "    ;;     	    (setq string (org-trim (substring string 1 -1))))"))
-                         (org-links-org-link--normalize-string string))
-                       ";; (setq string (org-trim (substring string 1 -1))))"))
-    (error "Assert failed"))
-
-(let ((string "    ;;     	    (setq string (org-trim (substring string 1 -1))))"))
-  (if (not (org-links-string-full-match
-                (org-links-org--unnormalize-string
-                 (regexp-quote
-                  (org-links-org-link--normalize-string string)))
-                string))
-    (error "Assert failed")))
-
 ;; -=  find LINE
 (defun org-links--line-number-at-string-pos (string pos)
   "Return the line number at position POS in STRING."
@@ -870,7 +845,7 @@ Return t if success or nil if failed"
        ((when org-links-debug-flag
           (print (format "org-links--local-get-target-position-for-link failed"))
           nil)))
-    ('org-links-on-several-error ; exception name
+    (org-links-on-several-error ; exception name
      (user-error "More than one lnes was found at line numbers: %s" err)
      nil)))
 
@@ -934,9 +909,8 @@ We apply `org-link-search' for area after current line to the end of the
  buffer, suppress errors and give warning for two resutls.
 Argument SEARCH is link to search."
   (save-excursion
-    ;; (save-restriction
-      (with-restriction (line-end-position) (point-max)
-      ;;   (save-excursion
+    (save-restriction
+      (narrow-to-region (line-end-position) (point-max)) ;  (with-restriction (line-end-position) (point-max)
       (condition-case nil
           ;; (with-restriction (line-end-position) (point-max)
           (let ((org-link-search-must-match-exact-headline t))

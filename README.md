@@ -1,5 +1,6 @@
 ![build](https://github.com/Anoncheg1/emacs-org-links/workflows/melpazoid/badge.svg)
 [![MELPA](https://melpa.org/packages/org-links-badge.svg)](http://melpa.org/#/org-links)
+![build-stable](https://github.com/Anoncheg1/emacs-org-links/workflows/melpazoid-release/badge.svg)
 [![MELPA Stable](https://stable.melpa.org/packages/org-links-badge.svg)](https://stable.melpa.org/#/org-links)
 
 # emacs-org-links

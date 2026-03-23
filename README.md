@@ -41,6 +41,8 @@ Where PATH is `file:path` or just `path` to file.
 
 There is `find-file-at-point` functions from ffap.el for opening FILENAME.
 
+Note: For Org outlines-headers `[[*Header]]` syntax is used.
+
 ## Features
 
 1) The command `org-links-store-extended' copies a link to the current file, at the current point.

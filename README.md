@@ -10,23 +10,23 @@ This package (org-links) provides facilities to help create and manage Org-mode 
 
 ## TL;DR
 
-Org mode:
+**Org mode:**
 - C-c w
-```[[180::asd]]```
+```[[13::asd]]```
 
 - C-u C-c w
 ```[[file:~/file.org::13::asd][asd]]```
 
-Programming mode:
+**Programming mode:**
 - C-c w
-```[[file:~/file.org::13::asd][asd]]```
+```[[file:~/file.el::13::asd][asd]]```
 
 - C-u C-c w
-```[[180::asd]]```
+```[[13::asd]]```
 
-Region selected:
+**Region selected:**
 - C-c w
-```[[180-190::asd]]```
+```[[13-17::asd]]```
 
 - C-u C-c w
 ```[[file:~/file.org::13-17::asd][asd]]```

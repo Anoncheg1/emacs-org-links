@@ -70,6 +70,10 @@ Create link depending on context, make it short and copy to kill-ring.
 
 Depending on link type we search LINE and use NUM if LINE was not found, `<<target>>`, #+name, and for full line or header.
 
+If two lines found We didn't implement to found most appropriate for NUM, that is why we halt and signal by default for such case.
+
+If you want to jump to first found line, set `(setopt org-links-on-several-halt-flag nil)`.
+
 ## Why?
 
 LLMs and fuzzy search will be more effective with additional information, if you want link that point to block of code you will need a range of line numbers

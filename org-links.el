@@ -148,7 +148,7 @@ Search ignore space characters at the begining of lines in all case."
   :type 'boolean
   :group 'org-links)
 
-(defcustom org-links-on-several-halt-flag nil
+(defcustom org-links-on-several-halt-flag t
   "Non-nil means we don't jump to first found result.
 Instead, we signal error and don't jump.
 Used in `org-links--find-line'."
@@ -846,7 +846,7 @@ Return t if success or nil if failed"
           (print (format "org-links--local-get-target-position-for-link failed"))
           nil)))
     (org-links-on-several-error ; exception name
-     (user-error "More than one lnes was found at line numbers: %s" err)
+     (user-error "More than one lnes was found at lines: %s" (cdr err))
      nil)))
 
 ;; (org-links--get-target-position-for-link "1-2::asd")

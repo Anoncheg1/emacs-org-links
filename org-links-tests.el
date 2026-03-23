@@ -290,7 +290,12 @@
     ;; Should return line number only if exactly one match
     (should (equal (org-links--find-line "link2") 3)) ; line number 3
     ;; ;; Multiple matches => fist
-    (should (equal (org-links--find-line "link1") 2))
+    (let ((org-links-on-several-halt-flag nil))
+      (should (equal (org-links--find-line "link1") 2)))
+    ;; Multiple matches => error
+    (let ((org-links-on-several-halt-flag t))
+      (should-error (org-links--find-line "link1")
+                    :type 'error))
     ;; No match => nil
     (should (equal (org-links--find-line "foo") nil))))
 

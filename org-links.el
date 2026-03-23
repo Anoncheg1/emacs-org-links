@@ -148,14 +148,21 @@ Search ignore space characters at the begining of lines in all case."
   :type 'boolean
   :group 'org-links)
 
-(defcustom org-links-error-on-several-search-results nil
+(defcustom org-links-on-several-halt-flag nil
   "Non-nil means we don't jump to first found result.
 Instead, we signal error and don't jump.
 Used in `org-links--find-line'."
   :type 'boolean
   :group 'org-links)
 
-(defvar org-links--debug-flag nil)
+(defcustom org-links-debug-flag nil
+  "Non-nil means activate debug output with `print' function."
+  :type 'boolean
+  :group 'org-links)
+
+(define-error 'org-links-on-several-error "Two results was fould for line in link.")
+
+
 
 (defvar org-links-num-num-regexp "^\\([0-9]+\\)-\\([0-9]+\\)$"
   "Links ::NUM-NUM.")
@@ -254,7 +261,7 @@ Return link or nil if line begin and end are equal for region"
         (r-beg (region-beginning)))
     (unless (= (line-number-at-pos r-end)
                (line-number-at-pos r-beg))
-      (when org-links--debug-flag
+      (when org-links-debug-flag
         (print (format "org-links--create-link-for-region N0 %s %s" (line-number-at-pos r-beg) (line-number-at-pos r-end))))
       (prog1
           ;; - 2) Preparation
@@ -274,7 +281,7 @@ Return link or nil if line begin and end are equal for region"
               (setq cline (org-links-org-link--normalize-string))
               (setq desc (org-link--normalize-string (org-links-org-link--normalize-string) t))
               (setq first-line-pos (point)))
-            (when org-links--debug-flag
+            (when org-links-debug-flag
               (print (format "org-links--create-link-for-region N1 %s" desc)))
             ;; - 3) Create link
             (if (and arg (bound-and-true-p buffer-file-name)) ; same as: `org-link--file-link-to-here'
@@ -375,7 +382,7 @@ For programming  modes we create link  with path by default,  because it
  more oftenly used.
 For usage with original Org `org-open-at-point-global' function."
   (interactive "P\n")
-  (when org-links--debug-flag
+  (when org-links-debug-flag
     (print (format "org-links-store-extended %s" arg)))
   ;; (abbreviate-file-name (buffer-file-name - ?
   (org-with-limited-levels
@@ -409,7 +416,7 @@ For usage with original Org `org-open-at-point-global' function."
             ;; all modes - for cursor at <<target>>
             ;; [[target]]
             ((org-in-regexp "[^<]<<\\([^<>]+\\)>>[^>]?$?" 1) ; works in any mode
-             (when org-links--debug-flag
+             (when org-links-debug-flag
                (print (format "org-links-store-extended at <<target>>")))
              (org-links-store-extended-universal (match-string 1)
                                                  arg
@@ -428,7 +435,7 @@ For usage with original Org `org-open-at-point-global' function."
             ;; - format: PATH::NUM::LINE
             ((or (derived-mode-p 'prog-mode)
                  (and (not (derived-mode-p 'org-mode)) (derived-mode-p 'text-mode)))
-             (when org-links--debug-flag
+             (when org-links-debug-flag
                (print (format "org-links-store-extended in programming mode")))
              ;; store without fuzzy content and add line number."
              (org-links-store-extended-universal (org-links-org-link--normalize-string)
@@ -448,7 +455,7 @@ For usage with original Org `org-open-at-point-global' function."
             ((and (derived-mode-p 'org-mode)
                   (org-at-heading-p))
 
-             (when org-links--debug-flag
+             (when org-links-debug-flag
                (print (format "org-links-store-extended at Org-header")))
              (org-links-store-extended-universal (concat "*"
                                                          (let* ((s (org-links-org-link--normalize-string)) ; or (substring-no-properties (org-link-heading-search-string))
@@ -469,13 +476,13 @@ For usage with original Org `org-open-at-point-global' function."
                         (looking-at "^[ \t]*#\\+\\(begin\\|end\\)_.*$")) ; header or end of some block
                     ;; goto begin if at end
                     (progn
-                      (when org-links--debug-flag
+                      (when org-links-debug-flag
                         (print (format "org-links-store-extended at name1")))
                       (when (looking-at "^[ \t]*#\\+end_.*$")
                         (goto-char (org-element-property :begin (org-element-at-point))))
                       (when-let ((name (or (org-element-property :name (org-element-at-point))
                                            (org-links-org-link--normalize-string))))
-                        (when org-links--debug-flag
+                        (when org-links-debug-flag
                           (print (format "org-links-store-extended at name2 %s" (org-link--normalize-string name t))))
                         (org-links-store-extended-universal name
                                                             arg
@@ -502,7 +509,7 @@ For usage with original Org `org-open-at-point-global' function."
            ;; all modes - any line [[../emacs-org-links/org-links.el::367]]
            ;; format: - NUM::LINE and PATH::NUM::LINE
            (t ; for Org-mode normal line and  for any mode
-            (when org-links--debug-flag
+            (when org-links-debug-flag
               (print (format "org-links-store-extended at t - any")))
             (let ((cline (org-links-org-link--normalize-string)))
               (org-links-store-extended-universal cline
@@ -670,7 +677,7 @@ Count lines from 1 like `line-number-at-pos' function does.
 If GET-POSITIONS is  non-nil, returns list of buffer  positions for each
 match otherwisde line numbers.
 Returns list of line numbers or empty list."
-  (when org-links--debug-flag
+  (when org-links-debug-flag
       (print (format "first-two-exact-lines-in-buffer-optimized %s %s" search-string-regex get-positions)))
   (let* ((threshold org-links-threshold-search-link-optimization-max-file)
          (bufsize (- (point-max) (point-min)))
@@ -707,15 +714,13 @@ Returns list of line numbers or empty list."
               (setq ln (1+ ln))))
             (nreverse results2))))))
 
-(define-error 'org-links-double-found "Two results was fould for line in link.")
-
 (defun org-links--find-line (link-org-string &optional enable-target get-position)
   "Return line number that match LINK-ORG-STRING in buffer or nil.
 When ENABLE-TARGET, then Search <<>> and #+NAME keywrord first, if not
  found search for whole line.
 If GET-POSITION is non-nil, then return position instead of line number.
 Return one number or nil."
-  (when org-links--debug-flag
+  (when org-links-debug-flag
     (print (format "org-links--find-line1 %s" link-org-string)))
   ;; repare search regex
   (let ((link-line (concat "^"
@@ -731,19 +736,19 @@ Return one number or nil."
       ;; search <<target>>
       (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized
                  link-target get-position))
-      (when org-links--debug-flag
+      (when org-links-debug-flag
         (print (format "org-links--find-line2\n%s\n%s" link-target res)))
       ;; search #+NAME:
       (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized
                  link-name get-position))
-      (when org-links--debug-flag
+      (when org-links-debug-flag
         (print (format "org-links--find-line3\n%s\n%s" link-name res))))
 
     (unless res
       ;; search LINE
       (setq res (org-links-find-first-two-exact-lines-in-buffer-optimized
                  link-line get-position))
-      (when org-links--debug-flag
+      (when org-links-debug-flag
         (print (format "org-links--find-line4\n%s\n%s" link-line res))))
 
     ;; (unless (or res only-line)
@@ -752,7 +757,7 @@ Return one number or nil."
     ;;     (save-excursion
     ;;       (org-with-wide-buffer
     ;;        (let ((found (org-link-search link-org-string)))
-    ;;          (when org-links--debug-flag
+    ;;          (when org-links-debug-flag
     ;;            (print (format "org-links--find-line3 %s" found)))
     ;;          (when (and (eq found 'dedicated)
     ;;                     (not (= (line-number-at-pos) ln-before))) ; found?
@@ -765,8 +770,8 @@ Return one number or nil."
         (prog1
             (car res) ; return
           (when (> (length res) 1)
-            (when org-links-error-on-several-search-results
-              (signal 'org-links-double-found res))
+            (when org-links-on-several-halt-flag
+              (signal 'org-links-on-several-error res))
             (unless org-links-silent
               (message "More than one line found, NUM is used. %s" res))))
       ;; else - no res
@@ -822,7 +827,7 @@ Also profide fix for not-Org modes to able to search fuzzy.
 LINK is plain link without [].
 ::LINK not handled.
 Return t if success or nil if failed"
-  (when org-links--debug-flag
+  (when org-links-debug-flag
     (print (format "org-links--local-get-target-position-for-link N1 %s %s"
                    link (derived-mode-p 'org-mode))))
   (condition-case err
@@ -849,8 +854,9 @@ Return t if success or nil if failed"
        ((when-let* ((num1 (and (string-match org-links-num-line-regexp link)
 	                       (match-string 1 link)))
 	            (line (match-string 2 link))) ; may be ""
-          (print (format "org-links--local-get-target-position-for-link N2 %s %s"
-                   link (derived-mode-p 'org-mode)))
+          (when org-links-debug-flag
+            (print (format "org-links--local-get-target-position-for-link N2 %s %s"
+                           link (derived-mode-p 'org-mode))))
           (if-let* ((n1 (and (not (string-empty-p line))
                              (org-links--find-line line t)))) ; search target also
               (list n1 nil)
@@ -861,10 +867,10 @@ Return t if success or nil if failed"
        ;;       (when-let ((num1 (org-links--find-line link t)))
        ;;         (list num1 nil))))
        ;; t - debug
-       ((when org-links--debug-flag
+       ((when org-links-debug-flag
           (print (format "org-links--local-get-target-position-for-link failed"))
           nil)))
-    ('org-links-double-found ; exception name
+    ('org-links-on-several-error ; exception name
      (user-error "More than one lnes was found at line numbers: %s" err)
      nil)))
 
@@ -882,7 +888,7 @@ Return t if success or nil if failed"
 ;; `org-link-open' (hook here) -> `org-link-search' (cause error).
 ;; Hook requirement: When the function does handle the link, it must return
 ;; a non-nil value.  Don't called for file: type of links."
-;;   (when org-links--debug-flag
+;;   (when org-links-debug-flag
 ;;     (print (list "org-links-fix-open-target-not-org"  link-content)))
 ;;   (if (and (not (derived-mode-p 'org-mode))
 ;;            (not current-prefix-arg))
@@ -908,11 +914,11 @@ Used for  `org-execute-file-search-functions'.
 `org-execute-file-search-in-bibtex' as example.
 Return t if link was processed to stop `org-link-search' or nil to
  fallback to `org-link-search'."
-  (when org-links--debug-flag
+  (when org-links-debug-flag
     (print (list "org-links-additional-formats N1" link)))
   ;; 1) get line numbers for link
   (when-let ((nums (org-links--local-get-target-position-for-link link)))
-    (when org-links--debug-flag
+    (when org-links-debug-flag
       (print (list "org-links-additional-formats N2" nums)))
     (let ((num1 (car nums))
           (num2 (cadr nums)))
@@ -952,7 +958,7 @@ Use current buffer for search line.
 We apply original function to open file and then find in it.
 Optional argument ARGS is `org-open-file' arguments."
   ;; [[file::#+ or  [[file:#+
-  (when org-links--debug-flag
+  (when org-links-debug-flag
     (print (list "org-links-org-open-file-advice N1" args)))
   ;; (if (= (length args) 2)
   ;;     (seq-let (search _) args
@@ -973,7 +979,7 @@ Optional argument ARGS is `org-open-file' arguments."
       ;; else 4
   (seq-let (path in-emacs string search) args
     (ignore string) ; noqa: unused
-    (when org-links--debug-flag
+    (when org-links-debug-flag
       (print (list "org-links-org-open-file-advice N2" path search)))
     (cond
      ((and search ; part after ::
@@ -1007,7 +1013,7 @@ Optional argument ARGS is `org-open-file' arguments."
               ;; else
               (apply orig-fun args)))
       (when (org-links-org-link-search search)
-        (if org-links-error-on-several-search-results
+        (if org-links-on-several-halt-flag
             (user-error "Two targets exist for this link")
           ;; else
           (unless org-links-silent

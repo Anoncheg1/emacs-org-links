@@ -294,7 +294,7 @@
     ;; No match => nil
     (should (equal (org-links--find-line "foo") nil))))
 
-;; -=  org-open-file advice to other file
+;; -=  org-open-file jump to other file
 (ert-deftest org-links-tests-jump-num-line-test1 ()
   (print "Test: org-links-jump-num-line-test")
   (let ((kill-buffer-query-functions))
@@ -360,6 +360,37 @@
          ))))
        (setq kill-ring nil)
        )
+;; -= double find
+
+(ert-deftest org-links-tests-double-find ()
+  (let ((kill-buffer-query-functions))
+    (with-temp-buffer
+      (with-org-link-config
+       (org-mode)
+       ;; (setq buffer-file-name "/mock/test.txt")
+       (let ((org-links-on-several-halt-flag t)
+             link1 link2)
+         (insert "* header1")
+         (setq link1 (org-links-store-extended nil))
+         (setq link2 (org-links-store-extended 1))
+         (insert "\n\n#nothin\n# never\nfoo\nbar\nbaz\nqux\n")
+         (insert "* header1\nas\n")
+         (insert "\n" link1)
+         (set-buffer-modified-p nil)
+
+         (backward-char)
+         ;; (org-open-at-point)))))
+         (should-error (org-open-at-point)
+                       :type 'user-error)
+         (insert "\n" link2)
+         (should-error (org-open-at-point)
+                       :type 'user-error)))))
+          ;; (print (buffer-substring-no-properties
+          ;;                      (line-beginning-position)
+          ;;                      (line-end-position)))))))
+;; org-links-on-several-flag
+         )
+
 ;; -=  store link
 ;; Mocking necessary dependencies
 (defmacro org-links-tests-with-mocks (&rest body)

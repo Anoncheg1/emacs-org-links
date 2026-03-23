@@ -29,6 +29,16 @@ Region selected:
 - C-u C-c w
 ```[[file:~/file.org::13-17::asd][asd]]```
 
+## Org mode provide by default
+
+Org mode supports links::
+- `[[PATH::NUM][Link description]]`
+- `[[PATH::LINE][Link description]]`
+- `[[LINE]]`
+Where PATH is `file:path` or just `path` to file.
+
+There is `find-file-at-point` functions from ffap.el for opening FILENAME.
+
 ## Features
 
 1) The command `org-links-store-extended' copies a link to the current file, at the current point.
@@ -49,14 +59,6 @@ First, we search for LINE, if not found we use NUM line number.
 `[[NUM-NUM]]` - used for region selection.
 
 Known issue: Org export not working properly with new formats.
-
-## Org mode provide by default
-
-Org mode supports file links with line numbers and line via the following syntax:
-- `[[PATH::NUM][Link description]]`
-- `[[PATH::LINE][Link description]]`
-
-There is `find-file-at-point` functions from ffap.el for opening FILENAME.
 
 ## Behavior
 

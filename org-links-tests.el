@@ -148,7 +148,7 @@
       (setq buffer-file-name "/mock/org.org")
       (insert "* headline")
       (org-links-store-link-fallback nil)
-      (should (string= (car kill-ring) "[[file:/mock/org.org::*headline][headline]]")))))
+      (should (string= (car kill-ring) "[[file:/mock/org.org::*headline]]")))))
 ;; (kill-buffer buf))))
 ;; -=  advices activation
 ;; ;; opening

@@ -571,8 +571,7 @@ Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
                       (link (substring-no-properties (car (call-interactively #'org-store-link nil))))) ; may be with description
                  (concat "[[" link "::" (number-to-string (line-number-at-pos)) "]]"))
              ;; else - ::LINE
-             (print (list "itishere" (call-interactively #'org-store-link nil)))
-             (substring-no-properties (car (call-interactively #'org-store-link nil)))))
+             (substring-no-properties (concat "[[" (car (call-interactively #'org-store-link nil)) "]]"))))
 
           ;; - else - programming, text and fundamental
           ;;          (or (derived-mode-p 'prog-mode)

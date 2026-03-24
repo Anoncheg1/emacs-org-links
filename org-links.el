@@ -568,8 +568,8 @@ Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
            (require 'org) ; hence we are in org anyway
            (if arg ; - ::NUM
                (let* ((org-link-context-for-files) ; set to nil to replace fuzzy links with line numbers
-                      (link (substring-no-properties (org-store-link nil))))
-                 (concat (substring link 0 (- (length link) 2)) "::" (number-to-string (line-number-at-pos)) "]]"))
+                      (link (substring-no-properties (car (call-interactively #'org-store-link nil))))) ; may be with description
+                 (concat "[[" link "::" (number-to-string (line-number-at-pos)) "]]"))
              ;; else - ::LINE
              (substring-no-properties (org-store-link nil))))
 

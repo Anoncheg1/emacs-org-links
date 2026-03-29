@@ -48,7 +48,7 @@ jobs:
 
       - name: Tests
         run: |
-         emacs -Q --batch -l ert.el -l org-links.el -l org-links-tests.el -f ert-run-tests-batch-and-exit
+         emacs -Q --no-site-file --batch -l ert.el -l org-links.el -l org-links-tests.el -f ert-run-tests-batch-and-exit
 
       - name: Run
         env:

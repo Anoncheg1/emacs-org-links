@@ -966,7 +966,7 @@ Optional argument ARGS is `org-open-file' arguments."
                (if (and tbf
                         (or (and cbfn (not (file-equal-p cbfn path))) ; if not scratch and different
                             (not cbfn))) ; scratch
-                   (switch-to-buffer tbf)
+                   (switch-to-buffer-other-window tbf)
                  ;; else
                  (apply orig-fun (list path in-emacs))))
              ;; (when-let ((cbfn (buffer-file-name (buffer-base-buffer))))
@@ -983,7 +983,7 @@ Optional argument ARGS is `org-open-file' arguments."
             (if (and tbf
                  (or (and cbfn (not (file-equal-p cbfn path))) ; if not scratch and different
                      (not cbfn))) ; scratch
-                (switch-to-buffer tbf)
+                (switch-to-buffer-other-window tbf)
               ;; else
               (apply orig-fun args)))
       (when (org-links-org-link-search search)

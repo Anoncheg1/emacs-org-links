@@ -140,7 +140,7 @@ If size of file larger than threshold process file line by line instead."
   :type 'integer
   :group 'org-links)
 
-(defcustom org-links-find-exact-flag nil
+(defcustom org-links-find-exact-flag t
   "Non-nil means we search lines that exact match ::LINE.
 Oterwise, by default, we search for lines that begin with ::LINE.
 Used in `org-links--find-line'.

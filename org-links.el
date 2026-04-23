@@ -52,6 +52,8 @@
 ;;
 ;; Known issue: Org export not working properly with new formats.
 
+;; [[::LINE]] is equal to [[LINE]]
+
 ;; Also provided:
 ;; 1) The command `org-links-store-extended' copies a link to the
 ;;    current file, at the current point.
@@ -400,7 +402,7 @@ For usage with original Org `org-open-at-point-global' function."
              (concat "file:" (buffer-file-name (buffer-base-buffer))))
             ;; - Dired
             ((derived-mode-p (intern "dired-mode"))
-             (string-join (mapcar (lambda (x) (concat "file:" x))
+             (string-join (mapcar (lambda (x) (concat "\"" x "\""))
                                   (funcall (intern "dired-get-marked-files") arg)) " "))
             ;; - Buffer menu
             ((derived-mode-p 'Buffer-menu-mode)
@@ -614,7 +616,8 @@ Return string"
 (defun org-links-org--unnormalize-string (string)
   "Create regex matching STRING with arbitrary whitespace.
 STRING should not contain regex expressions, be quoted with
- `regexp-quote'.
+ `org-link-make-string', `regexp-quote' quote * also, that is not
+ appropriate.
 Do 1) replace spaces with regex for spaces of any lenght.
 2) for header make regex for  proper Org headers, for line surround with
  possible spaces.
@@ -834,7 +837,12 @@ Return t if success or nil if failed"
                            link (derived-mode-p 'org-mode))))
           (if-let* ((n1 (and (not (string-empty-p line))
                              (org-links--find-line line t)))) ; search target also
-              (list n1 nil)
+              (progn
+                (when org-links-debug-flag
+                  (print (format "org-links--local-get-target-position-for-link N3 %s"
+                                 n1
+                                 )))
+                (list n1 nil))
             ;; else - fail to find line, return NUM
             (list (string-to-number num1)))))
        ;; ;; LINE - may be a target (without <<>>) or fuzzy link
@@ -875,7 +883,6 @@ Return t if success or nil if failed"
 ;;     nil))
 
 ;; (add-hook 'org-open-link-functions #'org-links-fix-open-target-not-org)
-
 
 
 ;;;###autoload
@@ -924,9 +931,9 @@ Argument SEARCH is link to search."
 ;; -=  Approach 1) org-open-file advice - based on fuzzy links. Fix probles caused by org-open-file.
 ;;;###autoload
 (defun org-links-org-open-file-advice (orig-fun &rest args)
-  "Open file before pass control to `org-link-search' with our hook.
-Argument ORIG-FUN is `org-open-file' that breaks at NUM-NUM,
-NUM-NUM::LINE, NUM::LINE formats.
+  "Fix `org-open-file' for NUM-NUM, NUM-NUM::LINE, NUM::LINE formats.
+Open file before pass control to `org-link-search' with our hook.
+Argument ORIG-FUN is `org-open-file'.
 Support file::LINE and file:LINE formats.
 Use current buffer for search line.
 We apply original function to open file and then find in it.
@@ -961,6 +968,8 @@ Optional argument ARGS is `org-open-file' arguments."
                (string-match org-links-num-line-regexp search) ; NUM::LINE
                (string-match org-links-num-num-line-regexp search)) ; NUM-NUM::LINE
            (progn
+             (when org-links-debug-flag
+               (print (list "org-links-org-open-file-advice N3" "")))
              (let ((cbfn (buffer-file-name (buffer-base-buffer))) ;no scratch
                    (tbf (get-file-buffer path)))
                (if (and tbf
@@ -974,24 +983,28 @@ Optional argument ARGS is `org-open-file' arguments."
              ;;   ;; (unless (file-equal-p cbfn path)
              ;;     (apply orig-fun (list path in-emacs)))
              (org-links-additional-formats search))))
-     (search ; PATH::LINE - fallback to `org-open-file' + `org-link-search'
-      ;; current buffer may be *scratch*
-      ;; link may be to current buffer with path
+     ;; (search ; PATH::LINE - fallback to `org-open-file' + `org-link-search'
+     ;;  ;; current buffer may be *scratch*
+     ;;  ;; link may be to current buffer with path
 
-      (let ((cbfn (buffer-file-name (buffer-base-buffer))) ;no scratch
-            (tbf (get-file-buffer path)))
-            (if (and tbf
-                 (or (and cbfn (not (file-equal-p cbfn path))) ; if not scratch and different
-                     (not cbfn))) ; scratch
-                (switch-to-buffer-other-window tbf)
-              ;; else
-              (apply orig-fun args)))
-      (when (org-links-org-link-search search)
-        (if org-links-on-several-halt-flag
-            (user-error "Two targets exist for this link")
-          ;; else
-          (unless org-links-silent
-            (message "Warning: Two targets exist for this link.")))))
+     ;;  (let ((cbfn (buffer-file-name (buffer-base-buffer))) ; no scratch
+     ;;        (tbf (get-file-buffer path)))
+     ;;    (when org-links-debug-flag
+     ;;      (print (list "org-links-org-open-file-advice N4" "")))
+     ;;    (if (and tbf
+     ;;             (or (and cbfn (not (file-equal-p cbfn path))) ; if not scratch and different
+     ;;                 (not cbfn))) ; scratch
+     ;;        (switch-to-buffer-other-window tbf)
+     ;;      ;; else
+     ;;      (apply orig-fun args)))
+
+     ;;  ;; (when (org-links-org-link-search search)
+     ;;  ;;   (if org-links-on-several-halt-flag
+     ;;  ;;       (user-error "Two targets exist for this link")
+     ;;  ;;     ;; else
+     ;;  ;;     (unless org-links-silent
+     ;;  ;;       (message "Warning: Two targets exist for this link."))))
+     ;;  )
          ;; ;; NUM-NUM
          ;; ((when-let* ((num1 (and (string-match org-links-num-num-regexp search)
 	 ;;                         (match-string 1 search)))
@@ -1025,6 +1038,8 @@ Optional argument ARGS is `org-open-file' arguments."
      (t ;; else - PATH::LINE - fallback to `org-open-file' + `org-link-search'
       ;; (old) Addon to Org logic: signal if two targets exist
       ;; else - no part after ::
+      (when org-links-debug-flag
+        (print (list "org-links-org-open-file-advice N5" "")))
       (apply orig-fun args)))))
 
 
@@ -1055,6 +1070,8 @@ If universal argument ARG is non-nil, then skip additionals."
               (user-error "File does not exist"))))))
 
     ;; - call with catching error
+    (when org-links-debug-flag
+      (print (list "org-links-org-open-at-point-global" "")))
     (condition-case nil
         (call-interactively #'org-open-at-point-global)
       ;; user-error: "No link found"

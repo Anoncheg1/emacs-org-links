@@ -1039,8 +1039,10 @@ Optional argument ARGS is `org-open-file' arguments."
       ;; (old) Addon to Org logic: signal if two targets exist
       ;; else - no part after ::
       (when org-links-debug-flag
-        (print (list "org-links-org-open-file-advice N5" "")))
-      (apply orig-fun args)))))
+        (print (list "org-links-org-open-file-advice N5" orig-fun args)))
+      (apply orig-fun (list path t))
+      ;; (apply orig-fun args)
+      ))))
 
 
 ;; (advice-add 'org-open-file :around #'org-links-org-open-file-advice)

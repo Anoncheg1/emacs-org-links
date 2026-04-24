@@ -840,8 +840,7 @@ Return t if success or nil if failed"
               (progn
                 (when org-links-debug-flag
                   (print (format "org-links--local-get-target-position-for-link N3 %s"
-                                 n1
-                                 )))
+                                 n1)))
                 (list n1 nil))
             ;; else - fail to find line, return NUM
             (list (string-to-number num1)))))

@@ -346,18 +346,20 @@
       (with-org-link-config
        (org-mode)
        (setq buffer-file-name "/mock/org.org")
-       (insert "some-text above1\n")
-       (insert "some-text above2\n")
-       (insert "* headline")
+       (insert "some-text above1\n") ; line 1
+       (insert "some-text above2\n") ; line 2
+       (insert "* headline") ; line 3
        (org-links-store-extended 1)
        (insert "\nsome-text below\n")
        (set-buffer-modified-p nil)
        (setq buffer-read-only t)
+       ;; (print (list "wtf1" (buffer-string)))
        (with-temp-buffer
-         (insert (car kill-ring))      ; [[file:/mock/org.org::2::* headline]]
+         (insert (car kill-ring))      ; "[[file:/mock/org.org::3::*headline][headline]]" [[file:/mock/org.org::2::* headline]]
          (read-only-mode 1)
          ;; (org-open-at-point-global)
          (org-links-org-open-at-point-global)
+         ;; (print (list "wtf2" (buffer-string)))
          (should (string-equal "* headline" (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
          ))))
        (setq kill-ring nil)

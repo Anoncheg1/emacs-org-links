@@ -1133,40 +1133,38 @@ Optional argument ARGS is `org-open-file' arguments."
 ;; -=  Better `org-open-at-point-global' to open link from string
 (defun org-links-org-open-at-point-global (&optional arg)
   "Enhancements for `org-open-at-point-global' function.
-- ask for link if not found.
+- if link nit exist, raise error.
 - if file not exist, raise error, not open empty file.
 If universal argument ARG is non-nil, then skip additionals."
   (interactive "P")
+  (when org-links-debug-flag
+      (print "org-links-org-open-at-point-global"))
   (if arg
       (call-interactively #'org-open-at-point-global)
-    ;; else
-    ;; - raise error if check that file exist, dont check if buffer with file path exist
-    (save-excursion
-      (save-match-data
-        (when (org-in-regexp org-link-any-re)
-          (goto-char (match-beginning 0))
-          (when-let* ((link (org-element-link-parser))
-                      (type (org-element-property :type link))
-	              (path (org-element-property :path link)))
-            (when (and (string= type "file")
-                       (not (file-readable-p path))
-                       (not (get-file-buffer path)))
-              (user-error "File does not exist"))))))
+    (save-match-data
+      (unless (org-in-regexp org-link-any-re)
+        (user-error "No link at position"))
+      (save-excursion
+        ;; check that file exist before jump
+        (goto-char (match-beginning 0))
+        (when-let* ((link (org-element-link-parser))
+                    (type (org-element-property :type link))
+	            (path (org-element-property :path link)))
+          (when (and (string= type "file")
+                     (not (file-readable-p path))
+                     (not (get-file-buffer path)))
 
-    ;; - call with catching error
-    (when org-links-debug-flag
-      (print (list "org-links-org-open-at-point-global" "")))
-    (condition-case nil
-        (call-interactively #'org-open-at-point-global)
-      ;; user-error: "No link found"
-      (user-error
-       (when kill-ring
-         (let ((link (read-buffer "link: " (when (string-match org-link-any-re (car kill-ring-yank-pointer))
-                                             (car kill-ring-yank-pointer)))))
-           (unless (string-empty-p link)
-             (with-temp-buffer
-               (insert link)
-               (call-interactively #'org-open-at-point-global)))))))))
+            (user-error "File does not exist"))))
+      (call-interactively #'org-open-at-point-global))))
+      ;; ;; user-error: "No link found"
+      ;; (user-error
+      ;;  (when kill-ring
+      ;;    (let ((link (read-buffer "link: " (when (string-match org-link-any-re (car kill-ring-yank-pointer))
+      ;;                                        (car kill-ring-yank-pointer)))))
+      ;;      (unless (string-empty-p link)
+      ;;        (with-temp-buffer
+      ;;          (insert link)
+      ;;          (call-interactively #'org-open-at-point-global)))))))))
 ;;; provide
 (provide 'org-links)
 

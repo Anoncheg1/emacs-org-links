@@ -177,20 +177,17 @@ In programming modes at moment of creation of link."
 
 
 
-(defvar org-links-num-num-regexp "^\\([0-9]+\\)-\\([0-9]+\\)$"
-  "Links ::NUM-NUM.")
+(defconst org-links-num-num-regexp
+  "^\\([0-9]+\\)-\\([0-9]+\\)$"
+  "Links NUM-NUM - groups 1 2.")
 
-;; (defvar org-links-num-num-re (rx (seq "[["
-;; 	           ;; URI part: match group 1.
-;; 	           (group (+ digit)) "-" (group (+ digit))
-;; 		   ;; Description (optional): match group 2.
-;; 		   (opt "[" (group (+? anything)) "]")
-;; 		   "]")))
+(defconst org-links-num-num-line-regexp
+  "^\\([0-9]+\\)-\\([0-9]+\\)::\\(.*\\)$"
+  "Links NUM-NUM::LINE - groups 1 2 3 with line (possibly empty).")
 
-(defvar org-links-num-num-line-regexp "^\\([0-9]+\\)-\\([0-9]+\\)::\\(.*\\)$"
-  "Links ::NUM-NUM::LINE.")
-(defvar org-links-num-line-regexp "^\\([0-9]+\\)::\\(.?+\\)$"
-  "Links ::NUM::LINE.")
+(defconst org-links-num-line-regexp
+  "^\\([0-9]+\\)::\\(.*\\)$"
+  "Links NUM::LINE - groups 1 2 with line (possibly empty).")
 
 ;; -= debug
 (defmacro org-links-debug (tag &rest exprs)

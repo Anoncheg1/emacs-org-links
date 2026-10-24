@@ -22,18 +22,21 @@ Classification according to `org-element-link-parser':
 
 
 * ==== How Org links works: ====
+ol.el --- Org links library
+
 https://orgmode.org/guide/Hyperlinks.html
 
 Storing: `org-store-link' store link to org-stored-links variable
-  `org-stored-links', functions `org-insert-link' and
-  `org-insert-link-global' put link to buffer.
+  `org-stored-links'
+Restoring: `org-insert-link' and `org-insert-link-global' functions are used to put link to buffer.
+
 Opening 1): `org-open-at-point'
  -> `org-link-open' ; org.el
    - for "files:" `org-link-open-as-file' -> `org-open-file' (handle
         "::23", cause troubles) -> `org-link-search'
    - for local links `org-link--search-radio-target' and `org-link-search' used
 
- Opening 2): `org-open-at-point-global' ; org.el
+Opening 2): `org-open-at-point-global' ; org.el
  -> `org-link-open-from-string' -> `org-link-open' (element)
 `org-link-search' (for curret buffer) call  `org-execute-file-search-functions' or search link.
 Org configurable variables:

@@ -1,5 +1,7 @@
 ;;; org-links.el --- Better manage line numbers in links of Org mode -*- lexical-binding: t -*-
 
+;; Copyright (c) 2025-2026 github.com/Anoncheg1,codeberg.org/Anoncheg
+
 ;; Author: <github.com/Anoncheg1,codeberg.org/Anoncheg>
 ;; Keywords: org, text, hypermedia, url
 ;; URL: https://github.com/Anoncheg1/emacs-org-links
@@ -7,7 +9,7 @@
 ;; Created: 30 Aug 2025
 ;; Package-Requires: ((emacs "27.2"))
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
-;; Copyright (c) 2025 github.com/Anoncheg1,codeberg.org/Anoncheg
+
 
 ;;; License
 
@@ -31,12 +33,13 @@
 
 ;;; Commentary:
 
-;; This package (org-links) provides facilities to help create and
-;;  manage Org-mode links, add new link types, have speed optimization
-;;  for large files.  Have facility to message if two lines was found,
-;;  control wheter to search for full line or by the begining of it.
+;; This package (org-links) provides new link types and simplifies
+;; copying and pasting of links by extending Org-mode links (ol.el). It
+;; also has speed optimizations for large files. It has a facility to
+;; message if two lines were found, and to control whether to search for
+;; the full line or by the beginning of it.
 
-;; org-mode supports  file links  with line numbers  and line  via the
+;; org-mode supports file links with line numbers and line via the
 ;;  following syntax:
 ;; [[PATH::NUM][Link description]]
 ;; [[PATH::LINE][Link description]]
@@ -109,7 +112,7 @@
 ;; - Solution for "callback hell"	https://github.com/Anoncheg1/emacs-async1
 ;; - Restore buffer state	https://github.com/Anoncheg1/emacs-unmodified-buffer1
 ;; - outline.el usage		https://github.com/Anoncheg1/emacs-outline-it
-;; - ai_block for Org mode for chat.  https://github.com/Anoncheg1/emacs-oai
+;; - Chat with LLMs in Org blocks	https://github.com/Anoncheg1/emacs-cui
 
 ;; *DONATE MONEY* to sponsor author directly with crypto currencies:
 ;; - BTC (Bitcoin) address: 1CcDWSQ2vgqv5LxZuWaHGW52B9fkT5io25
@@ -192,14 +195,15 @@ In programming modes at moment of creation of link."
 ;; -= debug
 (defmacro org-links-debug (tag &rest exprs)
   "Conditionally print debug info if `org-links-debug-flag' is non-nil.
-If TAG is a string containing '%', use it directly as a format string for message.
+If TAG is a string containing '%', use it directly as a format string
+ for message.
 Otherwise, treat TAG as a label using the standard '%s %S' format."
-  (declare (doc-string 4) (indent defun))
-  (if (and (stringp tag) (string-match-p "%" tag))
-      `(when org-links-debug-flag
-         (message ,tag ,@exprs))
-    `(when org-links-debug-flag
-       (message "%s %S" ,tag (list ,@exprs)))))
+  (declare (doc-string 3) (indent defun))
+  `(when org-links-debug-flag
+     ,(if (and (stringp tag) (string-match-p "%[^%]" tag))
+          `(message ,tag ,@exprs)
+        `(message "%s %S" ,tag (list ,@exprs)))
+     nil))
 
 ;; -=  functions
 (defsubst org-links-string-full-match (regexp string)
@@ -640,10 +644,18 @@ Support `image-dired-thumbnail-mode', `image-dired-image-mode' and
 
 ;; -=  help functions: unnormalize link
 
+;; (org-link-escape ; add two slashed, but onle one needed. [
+;; (replace-regexp-in-string "\\([][]\\)"
+;;                           "\\\\1"
+
 (defun org-links-org-link--normalize-string (&optional string)
-  "Compact spaces and trim leading to make link more compact.
+  "Return STRING normalized to make it more compact.
 Works in not Org modes.
 Modified version of `org-link--normalize-string'.
+If STRING is nil, use the text of the current line, without text
+properties.  Leading and trailing whitespace is removed, and every
+internal run of whitespace (space, tab, newline, or carriage
+return) is collapsed to a single space.
 Dont escape [] characters, this is done with futher
  `org-link-make-string' or `org-links-create-link'.
 Instead of much of removal we only compact spaces and remove leading.
@@ -651,20 +663,15 @@ Instead of removing [1/3], [50%], leading ( and trailing ), spaces at
 the end of STRING, we just compress spaces in line and remove leading
 spaces from STRING.  CONTEXT ignored.
 If string is header, we replace it with one * character without space
- after.
-Return string"
-  (let ((string (or string (buffer-substring-no-properties
-                            (line-beginning-position)
-                            (line-end-position)))))
+ after."
+  (let ((s (or string
+               (buffer-substring-no-properties
+                (line-beginning-position)
+                (line-end-position)))))
     (replace-regexp-in-string
-     (rx (one-or-more (any " \t")))
+     (rx (one-or-more (any " \t\n\r")))
      " "
-     (string-trim
-      ;; (org-link-escape ; add two slashed, but onle one needed. [
-      ;; (replace-regexp-in-string "\\([][]\\)"
-      ;;                           "\\\\1"
-      string)
-     "[ \t\n\r]+")))
+     (string-trim s))))
 
 (defun org-links-org--unnormalize-string (string)
   "Create regex matching STRING with arbitrary whitespace.

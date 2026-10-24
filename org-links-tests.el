@@ -735,6 +735,37 @@ ss
                 (org-links-org-link--normalize-string string)))
               string))))
 
+(ert-deftest org-links-org-link--normalize-string-mixed ()
+  (should (equal (org-links-org-link--normalize-string " a\t\t b\nc\rd ")
+                 "a b c d")))
+
+(ert-deftest org-links-org-link--normalize-string-all-whitespace ()
+  (should (equal (org-links-org-link--normalize-string "   \t\n ")
+                 "")))
+
+(ert-deftest org-links-org-link--normalize-string-identity ()
+  (should (equal (org-links-org-link--normalize-string "single")
+                 "single")))
+
+(ert-deftest org-links-org-link--normalize-string-idempotent ()
+  (let ((once (org-links-org-link--normalize-string " a\t\tb\n c ")))
+    (should (equal (org-links-org-link--normalize-string once)
+                   once))))
+
+(ert-deftest org-links-org-link--normalize-string-nil-mid-line-line-only ()
+  (with-temp-buffer
+    (insert "first   line\nsecond   line")
+    (goto-char (+ (point-min) 3))
+    (should (equal (org-links-org-link--normalize-string)
+                   "first line"))))
+
+(ert-deftest org-links-org-link--normalize-string-strips-properties ()
+  (with-temp-buffer
+    (insert (propertize "  hello   world  " 'face 'bold))
+    (goto-char (point-min))
+    (should (equal (org-links-org-link--normalize-string)
+                   "hello world"))))
+
 ;; -= provide
 (provide 'org-links-tests)
 

@@ -193,8 +193,9 @@ In programming modes at moment of creation of link."
 (defmacro org-links-debug (tag &rest exprs)
   "Conditionally print debug info if `org-links-debug-flag' is non-nil.
 If TAG is a string containing '%', use it directly as a format string
- for message.
-Otherwise, treat TAG as a label using the standard '%s %S' format."
+ for message and EXPRS values.
+Otherwhise, put tag as string and EXPRS as a list to a result message.
+Return nil always."
   (declare (doc-string 3) (indent defun))
   `(when org-links-debug-flag
      ,(if (and (stringp tag) (string-match-p "%[^%]" tag))
